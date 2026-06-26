@@ -1,10 +1,10 @@
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BrandLoader } from '@/components/BrandLoader';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { palette } from '@/theme';
+import { roleThemes } from '@/theme';
 
 function RootNavigator() {
   const { initializing, session, profile } = useAuth();
@@ -30,11 +30,8 @@ function RootNavigator() {
   }, [initializing, session, profile, segments, router]);
 
   if (initializing) {
-    return (
-      <View style={{ flex: 1, backgroundColor: palette.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={palette.orange} />
-      </View>
-    );
+    const accent = profile?.user_type === 'sub' ? roleThemes.sub.accent : roleThemes.gc.accent;
+    return <BrandLoader accent={accent} message="Setting up your site…" sub="AI daily logs for the field" />;
   }
 
   return <Slot />;

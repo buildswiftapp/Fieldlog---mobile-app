@@ -4,6 +4,7 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, Vi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppModeToggle, type AppMode } from '@/components/AppModeToggle';
 import { Button, Field } from '@/components/ui';
+import { LegalLinks } from '@/components/LegalLinks';
 import { MicIcon } from '@/components/icons';
 import { SsoButtons } from '@/components/SsoButtons';
 import { useAuth } from '@/context/AuthContext';
@@ -122,6 +123,8 @@ export default function Login() {
               </Text>
             </View>
           ) : null}
+
+          { mode === 'gc' ? <LegalLinks compact /> : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
