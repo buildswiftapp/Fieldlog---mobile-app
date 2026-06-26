@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Field } from '@/components/ui';
+import { LegalLinks } from '@/components/LegalLinks';
 import { SsoButtons } from '@/components/SsoButtons';
 import { useAuth } from '@/context/AuthContext';
 import { palette, roleThemes } from '@/theme';
@@ -67,6 +68,8 @@ export default function GcSignup() {
               Log in
             </Link>
           </Text>
+
+          <LegalLinks compact />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

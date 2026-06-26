@@ -60,6 +60,7 @@ export default function SubSignup() {
               Sign in
             </Link>
           </Text>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -32,7 +32,13 @@
       "expo-router",
       "expo-secure-store",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow FieldLog to access your photos so you can upload your company logo."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

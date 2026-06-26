@@ -9,6 +9,8 @@ import { palette, radius, roleThemes } from '@/theme';
 export function RoleHome({ role }: { role: 'gc' | 'sub' }) {
   const { profile, organization } = useAuth();
   const theme = roleThemes[role];
+  const accent = organization?.brand_color ?? theme.accent;
+  const accentDim = `${accent}22`;
   const firstName = profile?.full_name?.split(' ')[0] ?? null;
   const companyName = organization?.name ?? (role === 'gc' ? 'Your Company' : 'Your Trade');
 
@@ -18,14 +20,14 @@ export function RoleHome({ role }: { role: 'gc' | 'sub' }) {
         companyName={companyName}
         logoUrl={organization?.logo_url}
         firstName={firstName}
-        accent={theme.accent}
-        accentDim={theme.accentDim}
+        accent={accent}
+        accentDim={accentDim}
       />
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-        <View style={[styles.alert, { backgroundColor: `${theme.accent}12`, borderColor: `${theme.accent}38` }]}>
-          <AlertTriangleIcon color={theme.accent} size={16} />
+        <View style={[styles.alert, { backgroundColor: `${accent}12`, borderColor: `${accent}38` }]}>
+          <AlertTriangleIcon color={accent} size={16} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.alertTitle, { color: theme.accent }]}>
+            <Text style={[styles.alertTitle, { color: accent }]}>
               {role === 'gc' ? '✨ AI Alert — sample' : '1 log due today — sample'}
             </Text>
             <Text style={styles.alertBody}>
@@ -53,7 +55,7 @@ export function RoleHome({ role }: { role: 'gc' | 'sub' }) {
         <View style={styles.stats}>
           <View style={styles.stat}>
             <Text style={styles.statLabel}>{role === 'gc' ? 'Logs Today' : 'Logs This Week'}</Text>
-            <Text style={[styles.statValue, { color: theme.accent }]}>0</Text>
+            <Text style={[styles.statValue, { color: accent }]}>0</Text>
             <Text style={styles.statSub}>Starts in M3</Text>
           </View>
           <View style={styles.stat}>
@@ -75,8 +77,8 @@ export function RoleHome({ role }: { role: 'gc' | 'sub' }) {
 
         <SectionHeader title="Log Today's Work" />
         <View style={styles.fabWrap}>
-          <View style={[styles.fab, { backgroundColor: theme.accent }]}>
-            <MicIcon color={theme.onAccent} size={24} strokeWidth={2.4} />
+          <View style={[styles.fab, { backgroundColor: accent }]}>
+            <MicIcon color={role === 'gc' ? '#000000' : '#FFFFFF'} size={24} strokeWidth={2.4} />
           </View>
           <Text style={styles.fabHint}>Voice logging unlocks in Milestone 3</Text>
         </View>

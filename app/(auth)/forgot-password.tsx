@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -40,8 +41,10 @@ export default function ForgotPassword() {
     setError(null);
     setLoading(true);
     try {
+      const redirectTo =
+        Platform.OS === 'web' ? `${window.location.origin}/reset-password` : Linking.createURL('/reset-password');
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: 'fieldlog://reset-password',
+        redirectTo,
       });
       if (resetError) {
         setError(resetError.message);

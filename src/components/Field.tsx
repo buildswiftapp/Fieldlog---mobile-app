@@ -27,7 +27,6 @@ export function Field({
       try {
         setAutofilled(node.matches(':-webkit-autofill'));
       } catch {
-        // Some browsers throw on :-webkit-autofill in matches().
       }
     }
 
