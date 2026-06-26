@@ -41,10 +41,10 @@ export default function SubSignup() {
             <Text style={styles.tagline}>Free for subcontractors · invited by your GC</Text>
           </View>
 
-          <Field label="Company Name" placeholder="Mesa Electric" value={company} onChangeText={setCompany} style={styles.input} />
-          <Field label="Your Name" placeholder="Carlos Mendez" value={name} onChangeText={setName} autoCapitalize="words" style={styles.input} />
-          <Field label="Email" placeholder="you@company.com" keyboardType="email-address" value={email} onChangeText={setEmail} style={styles.input} />
-          <Field label="Password" placeholder="Create a password" secureTextEntry value={password} onChangeText={setPassword} style={styles.input} />
+          <Field label="Company Name" placeholder="Mesa Electric" value={company} onChangeText={setCompany} />
+          <Field label="Your Name" placeholder="Carlos Mendez" value={name} onChangeText={setName} autoCapitalize="words" />
+          <Field label="Email" placeholder="you@company.com" keyboardType="email-address" value={email} onChangeText={setEmail} />
+          <Field label="Password" placeholder="Create a password" secureTextEntry value={password} onChangeText={setPassword} />
 
           <Button
             label="Create Account"
@@ -70,9 +70,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 },
   brand: { alignItems: 'center', marginBottom: 26 },
-  title: { fontSize: 19, fontWeight: '600', marginBottom: 3 },
-  tagline: { fontSize: 12.5, color: palette.tx2, textAlign: 'center' },
-  input: { paddingVertical: 13, paddingHorizontal: 12 },
+  title: { fontSize: 19, fontWeight: '600', marginBottom: 3, color: palette.tx },
+  tagline: { fontSize: 12.5, color: palette.tx, textAlign: 'center', opacity: 0.88 },
   footer: { textAlign: 'center', marginTop: 18, fontSize: 12, color: palette.tx2 },
   link: { color: palette.blueLight, fontWeight: '500' },
 });
