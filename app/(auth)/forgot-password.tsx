@@ -58,10 +58,11 @@ export default function ForgotPassword() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <View style={styles.topBar}>
+        <AppModeToggle mode={mode} onChange={setMode} compact />
+      </View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <AppModeToggle mode={mode} onChange={setMode} />
-
           {mode === 'gc' ? (
             <View style={styles.brand}>
               <Text style={styles.kicker}>BYLDGO</Text>
@@ -132,7 +133,14 @@ export default function ForgotPassword() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
-  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 2,
+  },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingTop: 8, paddingBottom: 32 },
   brand: { alignItems: 'center', marginBottom: 28 },
   kicker: { fontSize: 13, fontWeight: '700', letterSpacing: 1.5, color: palette.tx3, marginBottom: 4 },
   wordmark: { fontSize: 22, fontWeight: '700' },
