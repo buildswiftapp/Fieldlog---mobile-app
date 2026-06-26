@@ -4,12 +4,13 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
-  type TextInputProps,
   type ViewStyle,
 } from 'react-native';
+import { Field } from '@/components/Field';
 import { palette, radius } from '@/theme';
+
+export { Field };
 
 export function Button({
   label,
@@ -31,14 +32,15 @@ export function Button({
   icon?: ReactNode;
 }) {
   const isPrimary = variant === 'primary';
+  const isDisabled = disabled || loading;
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={isDisabled}
       style={({ pressed }) => [
         styles.btn,
         isPrimary ? { backgroundColor: accent } : styles.btnSecondary,
-        (pressed || disabled || loading) && { opacity: 0.7 },
+        (pressed || isDisabled) && { opacity: 0.7 },
       ]}
     >
       {loading ? (
@@ -50,24 +52,6 @@ export function Button({
         </>
       )}
     </Pressable>
-  );
-}
-
-export function Field({
-  label,
-  style,
-  ...props
-}: TextInputProps & { label?: string }) {
-  return (
-    <View style={{ marginBottom: 12 }}>
-      {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
-      <TextInput
-        placeholderTextColor={palette.tx3}
-        style={[styles.input, style]}
-        autoCapitalize="none"
-        {...props}
-      />
-    </View>
   );
 }
 
@@ -124,17 +108,6 @@ const styles = StyleSheet.create({
   },
   btnSecondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: palette.border2 },
   btnText: { fontSize: 14, fontWeight: '600' },
-  fieldLabel: { fontSize: 11, fontWeight: '500', color: palette.tx2, marginBottom: 5 },
-  input: {
-    backgroundColor: palette.bg3,
-    borderWidth: 1,
-    borderColor: palette.border2,
-    borderRadius: radius.sm,
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    color: palette.tx,
-    fontSize: 14,
-  },
   card: {
     backgroundColor: palette.bg2,
     borderWidth: 1,

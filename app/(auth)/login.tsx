@@ -61,7 +61,7 @@ export default function Login() {
               <View style={[styles.subMark, { backgroundColor: theme.accentDim, borderColor: theme.accent }]}>
                 <MicIcon color={theme.accent} size={26} />
               </View>
-              <Text style={styles.subTitle}>FieldLog</Text>
+              <Text style={[styles.subTitle, { color: palette.tx }]}>FieldLog</Text>
               <Text style={styles.subTagline}>Subcontractor Portal</Text>
             </View>
           )}
@@ -80,21 +80,23 @@ export default function Login() {
             label="Email"
             placeholder="you@company.com"
             keyboardType="email-address"
+            autoComplete="email"
             value={email}
             onChangeText={setEmail}
-            style={mode === 'sub' ? styles.subInput : undefined}
           />
           <Field
             label="Password"
             placeholder="••••••••"
             secureTextEntry
+            autoComplete="password"
             value={password}
             onChangeText={setPassword}
-            style={mode === 'sub' ? styles.subInput : undefined}
           />
 
-          <Text style={styles.forgot} onPress={() => Alert.alert('Reset password', 'Password reset email sent (demo).')}>
-            Forgot password?
+          <Text style={styles.forgot}>
+            <Link href={`/(auth)/forgot-password?mode=${mode}${email ? `&email=${encodeURIComponent(email)}` : ''}`} style={styles.link}>
+              Forgot password?
+            </Link>
           </Text>
 
           <Button
@@ -147,8 +149,7 @@ const styles = StyleSheet.create({
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 18 },
   line: { flex: 1, height: 1, backgroundColor: palette.border2 },
   or: { fontSize: 10.5, color: palette.tx3 },
-  subInput: { paddingVertical: 13, paddingHorizontal: 12 },
-  forgot: { color: palette.blueLight, fontSize: 11.5, textAlign: 'right', marginTop: -2, marginBottom: 16 },
+  forgot: { fontSize: 11.5, textAlign: 'right', marginTop: -2, marginBottom: 16 },
   footer: { textAlign: 'center', marginTop: 18, fontSize: 12, color: palette.tx2 },
   link: { color: palette.blueLight, fontWeight: '500' },
   note: {
