@@ -4,11 +4,10 @@ import { palette } from '@/theme';
 
 export function LegalLinks({ compact }: { compact?: boolean }) {
   function open(url: string) {
-    Linking.openURL(url).catch(() => {
-    });
+    Linking.openURL(url).catch(() => undefined);
   }
 
-  if (!compact) {
+  if (compact) {
     return (
       <View style={styles.compactRow}>
         <Text style={styles.compactLink} onPress={() => open(LEGAL.termsUrl)}>
@@ -24,7 +23,7 @@ export function LegalLinks({ compact }: { compact?: boolean }) {
 
   return (
     <Text style={styles.text}>
-      By continuing, you agree to FieldLog's{' '}
+      By continuing, you agree to our{' '}
       <Text style={styles.link} onPress={() => open(LEGAL.termsUrl)}>
         Terms of Service
       </Text>{' '}
