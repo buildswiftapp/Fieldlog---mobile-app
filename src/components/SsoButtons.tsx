@@ -2,41 +2,47 @@ import * as Linking from 'expo-linking';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
+import { setPendingUserType } from '@/lib/pendingAuth';
 import { supabase } from '@/lib/supabase';
 import { palette, radius } from '@/theme';
 
 type Provider = 'google' | 'azure';
 
-async function startOAuth(provider: Provider, label: string) {
+async function startOAuth(provider: Provider, userType: 'gc' | 'sub') {
+  await setPendingUserType(userType);
+  const redirectPath = '/auth-callback';
+  const redirectTo =
+    Platform.OS === 'web'
+      ? `${window.location.origin}${redirectPath.startsWith('/') ? redirectPath : `/${redirectPath}`}`
+      : Linking.createURL(redirectPath);
+
   if (Platform.OS === 'web') {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo },
     });
     if (error) throw error;
     return;
   }
 
-  const redirectTo = Linking.createURL('/auth-callback');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: { redirectTo, skipBrowserRedirect: true },
   });
   if (error) throw error;
   if (data?.url) {
-    const opened = await Linking.openURL(data.url);
-    return opened;
+    await Linking.openURL(data.url);
   }
 }
 
-export function SsoButtons({ verb = 'Continue with' }: { verb?: string }) {
+export function SsoButtons({ verb = 'Continue with', userType = 'gc' }: { verb?: string; userType?: 'gc' | 'sub' }) {
   const [busy, setBusy] = useState<Provider | null>(null);
 
   async function onPress(provider: Provider, label: string) {
     if (busy) return;
     setBusy(provider);
     try {
-      await startOAuth(provider, label);
+      await startOAuth(provider, userType);
     } catch (e) {
       Alert.alert(
         `${label} sign-in unavailable`,

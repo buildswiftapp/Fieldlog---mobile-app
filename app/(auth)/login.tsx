@@ -1,4 +1,4 @@
-import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,7 +12,6 @@ import { palette, radius, roleThemes } from '@/theme';
 
 export default function Login() {
   const { signIn } = useAuth();
-  const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string }>();
   const [mode, setMode] = useState<AppMode>('gc');
   const [email, setEmail] = useState('');
@@ -34,7 +33,6 @@ export default function Login() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.replace('/');
     } catch (e) {
       Alert.alert('Could not sign in', e instanceof Error ? e.message : 'Please try again.');
     } finally {
@@ -68,7 +66,7 @@ export default function Login() {
             </View>
           )}
 
-          {mode === 'gc' ? <SsoButtons /> : null}
+          {mode === 'gc' ? <SsoButtons userType="gc" /> : null}
 
           {mode === 'gc' ? (
             <View style={styles.divider}>

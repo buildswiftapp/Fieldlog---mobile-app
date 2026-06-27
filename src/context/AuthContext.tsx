@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Organization, Profile, UserType } from '@/lib/database.types';
 
@@ -12,39 +12,62 @@ type SignUpArgs = {
   trade?: string;
 };
 
+export type SignUpResult = { needsEmailConfirmation: boolean };
+
+type BootstrapArgs = {
+  companyName: string;
+  userType: Exclude<UserType, 'owner'>;
+  trade?: string;
+};
+
 type AuthState = {
   initializing: boolean;
+  profileLoading: boolean;
   session: Session | null;
   profile: Profile | null;
   organization: Organization | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (args: SignUpArgs) => Promise<void>;
+  signUp: (args: SignUpArgs) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
+  bootstrapOrganization: (args: BootstrapArgs) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [initializing, setInitializing] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
+  const activeUserId = useRef<string | null>(null);
 
   async function loadProfile(userId: string) {
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
-    setProfile(prof ?? null);
+    setProfileLoading(true);
+    try {
+      const { data: prof, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      if (profileError) throw profileError;
+      setProfile(prof ?? null);
 
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('organization_id, is_primary, organizations(*)')
-      .eq('user_id', userId)
-      .order('is_primary', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      const { data: membership, error: membershipError } = await supabase
+        .from('organization_members')
+        .select('organization_id, is_primary, organizations(*)')
+        .eq('user_id', userId)
+        .order('is_primary', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (membershipError) throw membershipError;
 
-    const org = (membership as { organizations?: Organization } | null)?.organizations ?? null;
-    setOrganization(org);
+      const org = (membership as { organizations?: Organization } | null)?.organizations ?? null;
+      setOrganization(org);
+    } finally {
+      setProfileLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -53,14 +76,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return;
       setSession(data.session);
-      if (data.session?.user) await loadProfile(data.session.user.id);
+      activeUserId.current = data.session?.user?.id ?? null;
+      if (data.session?.user) {
+        try {
+          await loadProfile(data.session.user.id);
+        } catch {
+          setProfile(null);
+          setOrganization(null);
+        }
+      }
       setInitializing(false);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      const nextUserId = nextSession?.user?.id ?? null;
+      if (nextUserId !== activeUserId.current) {
+        setProfile(null);
+        setOrganization(null);
+      }
+
       setSession(nextSession);
+      activeUserId.current = nextUserId;
+
       if (nextSession?.user) {
-        await loadProfile(nextSession.user.id);
+        try {
+          await loadProfile(nextSession.user.id);
+        } catch {
+          setProfile(null);
+          setOrganization(null);
+        }
       } else {
         setProfile(null);
         setOrganization(null);
@@ -76,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthState>(
     () => ({
       initializing,
+      profileLoading,
       session,
       profile,
       organization,
@@ -91,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error) throw error;
         if (!data.session) {
-          return;
+          return { needsEmailConfirmation: true };
         }
         const { error: rpcError } = await supabase.rpc('fl_bootstrap_organization', {
           p_name: companyName,
@@ -101,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (rpcError) throw rpcError;
         if (data.user) await loadProfile(data.user.id);
+        return { needsEmailConfirmation: false };
       },
       signOut: async () => {
         await supabase.auth.signOut();
@@ -108,8 +154,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refresh: async () => {
         if (session?.user) await loadProfile(session.user.id);
       },
+      bootstrapOrganization: async ({ companyName, userType, trade }) => {
+        const { error } = await supabase.rpc('fl_bootstrap_organization', {
+          p_name: companyName,
+          p_type: userType,
+          p_trade: trade ?? null,
+          p_brand_color: userType === 'gc' ? '#F59E0B' : '#8B5CF6',
+        });
+        if (error) throw error;
+        if (session?.user) await loadProfile(session.user.id);
+      },
     }),
-    [initializing, session, profile, organization],
+    [initializing, profileLoading, session, profile, organization],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

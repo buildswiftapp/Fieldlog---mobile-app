@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
-const LOGO_BUCKET = 'org-logos';
+const LOGO_BUCKET = 'logos';
 
 function extFromUri(uri: string) {
   const match = uri.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);

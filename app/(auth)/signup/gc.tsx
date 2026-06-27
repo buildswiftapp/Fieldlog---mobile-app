@@ -25,7 +25,11 @@ export default function GcSignup() {
     }
     setLoading(true);
     try {
-      await signUp({ email, password, fullName: name, companyName: company, userType: 'gc' });
+      const result = await signUp({ email, password, fullName: name, companyName: company, userType: 'gc' });
+      if (result.needsEmailConfirmation) {
+        Alert.alert('Check your email', 'Confirm your account from the email we sent, then sign in.');
+        return;
+      }
       router.replace('/');
     } catch (e) {
       Alert.alert('Could not create account', e instanceof Error ? e.message : 'Please try again.');
@@ -47,7 +51,7 @@ export default function GcSignup() {
             <Text style={styles.tagline}>Create your GC account</Text>
           </View>
 
-          <SsoButtons verb="Sign up with" />
+          <SsoButtons verb="Sign up with" userType="gc" />
 
           <View style={styles.divider}>
             <View style={styles.line} />

@@ -30,7 +30,7 @@ function initials(name?: string | null) {
 }
 
 export function SettingsScreen({ role }: { role: 'gc' | 'sub' }) {
-  const { profile, organization, signOut, refresh } = useAuth();
+  const { session, profile, organization, signOut, refresh } = useAuth();
   const theme = roleThemes[role];
   const defaultAccent = theme.accent;
 
@@ -117,12 +117,6 @@ export function SettingsScreen({ role }: { role: 'gc' | 'sub' }) {
         await updateProfileName(profile.id, fullName);
       }
 
-      if (pendingLogoUri) {
-        const logoUrl = await uploadOrganizationLogo(organization.id, pendingLogoUri);
-        setLogoPreview(logoUrl);
-        setPendingLogoUri(null);
-      }
-
       await updateOrganization(organization.id, {
         name: companyName.trim(),
         brand_color: brandColor,
@@ -131,6 +125,12 @@ export function SettingsScreen({ role }: { role: 'gc' | 'sub' }) {
         phone: phone.trim() || null,
         website: website.trim() || null,
       });
+
+      if (pendingLogoUri) {
+        const logoUrl = await uploadOrganizationLogo(organization.id, pendingLogoUri);
+        setLogoPreview(logoUrl);
+        setPendingLogoUri(null);
+      }
 
       await refresh();
       Alert.alert('Saved', 'Your settings were updated.');
@@ -165,7 +165,7 @@ export function SettingsScreen({ role }: { role: 'gc' | 'sub' }) {
           <Field label="Full name" placeholder="Your name" value={fullName} onChangeText={setFullName} autoCapitalize="words" />
           <View style={styles.readOnlyRow}>
             <Text style={styles.readOnlyLabel}>Email</Text>
-            <Text style={styles.readOnlyValue}>{profile?.email ?? '—'}</Text>
+            <Text style={styles.readOnlyValue}>{profile?.email ?? session?.user.email ?? '—'}</Text>
           </View>
           <View style={styles.readOnlyRow}>
             <Text style={styles.readOnlyLabel}>Role</Text>

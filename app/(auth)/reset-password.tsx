@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandLoader } from '@/components/BrandLoader';
 import { Button, Field } from '@/components/ui';
+import { LegalLinks } from '@/components/LegalLinks';
 import { supabase } from '@/lib/supabase';
 import { palette, radius } from '@/theme';
 
@@ -26,22 +27,26 @@ export default function ResetPassword() {
   const [confirm, setConfirm] = useState('');
   const [saving, setSaving] = useState(false);
   const handled = useRef(false);
+  const started = useRef(false);
 
   useEffect(() => {
     let active = true;
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!active) return;
-      if ((event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') && session) {
+      if (!active || handled.current) return;
+      if (event === 'PASSWORD_RECOVERY' && session) {
         handled.current = true;
         setStage('form');
       }
     });
 
     async function init() {
+      if (started.current) return;
+      started.current = true;
+
       const code = typeof params.code === 'string' ? params.code : null;
       try {
-        if (code && Platform.OS !== 'web') {
+        if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
           if (active) {
@@ -52,7 +57,7 @@ export default function ResetPassword() {
         }
 
         const { data } = await supabase.auth.getSession();
-        if (data.session && active) {
+        if (data.session?.user?.recovery_sent_at && active) {
           handled.current = true;
           setStage('form');
         }
@@ -71,7 +76,7 @@ export default function ResetPassword() {
         setError('This reset link is invalid or has expired. Request a new one below.');
         setStage('error');
       }
-    }, 6000);
+    }, 12000);
 
     return () => {
       active = false;
@@ -181,6 +186,8 @@ export default function ResetPassword() {
               Back to sign in
             </Link>
           </Text>
+
+          <LegalLinks compact />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

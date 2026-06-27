@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppModeToggle, type AppMode } from '@/components/AppModeToggle';
 import { Button, Field } from '@/components/ui';
+import { LegalLinks } from '@/components/LegalLinks';
 import { MicIcon } from '@/components/icons';
 import { supabase } from '@/lib/supabase';
 import { palette, radius, roleThemes } from '@/theme';
@@ -128,6 +129,8 @@ export default function ForgotPassword() {
               Back to sign in
             </Link>
           </Text>
+
+          <LegalLinks compact />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
