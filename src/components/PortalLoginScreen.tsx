@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Field } from '@/components/ui';
 import { AuthOrDivider } from '@/components/AuthOrDivider';
 import { LegalLinks } from '@/components/LegalLinks';
-import { SsoButtons } from '@/components/SsoButtons';
+import { SsoButtons, showSsoForPortal } from '@/components/SsoButtons';
 import { MicIcon } from '@/components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { forgotPasswordRouteForPortal, loginRouteForPortal, signupRouteForPortal, type MobilePortal } from '@/lib/roles';
@@ -65,14 +65,13 @@ export function PortalLoginScreen({ portal }: Props) {
             </View>
           )}
 
-          <SsoButtons mode="login" portal={portal} />
-          <AuthOrDivider />
+          {showSsoForPortal(portal) ? (
+            <>
+              <SsoButtons mode="login" portal={portal} />
+              <AuthOrDivider />
+            </>
+          ) : null}
 
-          <Text style={styles.portalHint}>
-            {portal === 'gc'
-              ? 'GC accounts only. One email cannot sign in to both GC and Sub portals.'
-              : 'Subcontractor accounts only. One email cannot sign in to both GC and Sub portals.'}
-          </Text>
 
           <Field
             label="Email"

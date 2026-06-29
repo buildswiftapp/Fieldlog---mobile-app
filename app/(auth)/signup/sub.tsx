@@ -3,8 +3,6 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Field } from '@/components/ui';
-import { AuthOrDivider } from '@/components/AuthOrDivider';
-import { SsoButtons } from '@/components/SsoButtons';
 import { useAuth } from '@/context/AuthContext';
 import { loginRouteForPortal } from '@/lib/roles';
 import { palette, radius, roleThemes } from '@/theme';
@@ -82,9 +80,6 @@ export default function SubSignup() {
             <Text style={styles.title}>Create Your Account</Text>
             <Text style={styles.tagline}>Free for subcontractors · invited by your GC</Text>
           </View>
-
-          <SsoButtons mode="signup" portal="sub" />
-          <AuthOrDivider />
 
           <Field label="Company Name" placeholder="Mesa Electric" value={company} onChangeText={setCompany} />
           <Field label="Your Name" placeholder="Carlos Mendez" value={name} onChangeText={setName} autoCapitalize="words" />
