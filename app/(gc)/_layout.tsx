@@ -1,8 +1,16 @@
 import { Tabs } from 'expo-router';
 import { BellIcon, FolderIcon, HomeIcon, SettingsIcon } from '@/components/icons';
-import { palette } from '@/theme';
+import { BrandLoader } from '@/components/BrandLoader';
+import { usePortalGuard } from '@/hooks/usePortalGuard';
+import { palette, roleThemes } from '@/theme';
 
 export default function GcLayout() {
+  const ready = usePortalGuard('gc');
+
+  if (!ready) {
+    return <BrandLoader accent={roleThemes.gc.accent} message="Setting up your site…" />;
+  }
+
   return (
     <Tabs
       screenOptions={{

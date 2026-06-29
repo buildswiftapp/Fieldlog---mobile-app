@@ -1,13 +1,22 @@
 import { Linking, StyleSheet, Text, View } from 'react-native';
 import { LEGAL } from '@/constants/legal';
+import type { MobilePortal } from '@/lib/roles';
 import { palette } from '@/theme';
 
-export function LegalLinks({ compact }: { compact?: boolean }) {
+type LegalLinksProps = {
+  compact?: boolean;
+  portal?: MobilePortal;
+};
+
+export function LegalLinks({ compact, portal = 'gc' }: LegalLinksProps) {
+  if (portal !== 'gc') return null;
+
   function open(url: string) {
-    Linking.openURL(url).catch(() => undefined);
+    Linking.openURL(url).catch(() => {
+    });
   }
 
-  if (compact) {
+  if (!compact) {
     return (
       <View style={styles.compactRow}>
         <Text style={styles.compactLink} onPress={() => open(LEGAL.termsUrl)}>
@@ -23,7 +32,7 @@ export function LegalLinks({ compact }: { compact?: boolean }) {
 
   return (
     <Text style={styles.text}>
-      By continuing, you agree to our{' '}
+      By continuing, you agree to FieldLog's{' '}
       <Text style={styles.link} onPress={() => open(LEGAL.termsUrl)}>
         Terms of Service
       </Text>{' '}

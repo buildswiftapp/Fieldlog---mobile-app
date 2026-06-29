@@ -14,13 +14,23 @@ export default function Root({ children }: PropsWithChildren) {
               @keyframes fieldlogAutofill {
                 from, to {
                   color: #F0F2F5;
-                  background: #1A1D22;
+                  background: transparent;
                 }
               }
 
               input.fieldlog-input,
               textarea.fieldlog-input {
                 color-scheme: dark;
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+                background: transparent !important;
+              }
+
+              input.fieldlog-input:focus,
+              textarea.fieldlog-input:focus {
+                outline: none !important;
+                box-shadow: none !important;
               }
 
               input.fieldlog-input:-webkit-autofill,
@@ -35,15 +45,9 @@ export default function Root({ children }: PropsWithChildren) {
                 box-shadow: 0 0 0 1000px #1A1D22 inset !important;
                 -webkit-text-fill-color: #F0F2F5 !important;
                 caret-color: #F0F2F5 !important;
-                border: 1px solid #2563EB !important;
                 animation-name: fieldlogAutofill;
                 animation-fill-mode: both;
                 transition: background-color 99999s ease-in-out 0s;
-              }
-
-              input:focus,
-              textarea:focus {
-                outline: none;
               }
             `,
           }}

@@ -1,8 +1,16 @@
 import { Tabs } from 'expo-router';
 import { BellIcon, FolderIcon, HomeIcon, SettingsIcon } from '@/components/icons';
-import { palette } from '@/theme';
+import { BrandLoader } from '@/components/BrandLoader';
+import { usePortalGuard } from '@/hooks/usePortalGuard';
+import { palette, roleThemes } from '@/theme';
 
 export default function SubLayout() {
+  const ready = usePortalGuard('sub');
+
+  if (!ready) {
+    return <BrandLoader accent={roleThemes.sub.accent} message="Setting up your site…" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
