@@ -9,20 +9,24 @@ import {
   Text,
   View,
 } from 'react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { getAuthRedirectUrl } from '@/lib/authLinking';
 import { saveOAuthPortal } from '@/lib/oauthIntent';
 import type { MobilePortal } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { palette, radius } from '@/theme';
 
-type Provider = 'google' | 'azure';
+type Provider = 'google';
 type SsoMode = 'login' | 'signup';
 
 type Props = {
   mode?: SsoMode;
   portal: MobilePortal;
 };
+
+export function showSsoForPortal(portal: MobilePortal) {
+  return portal === 'gc';
+}
 
 async function startOAuth(provider: Provider, portal: MobilePortal) {
   await saveOAuthPortal(portal);
@@ -33,7 +37,7 @@ async function startOAuth(provider: Provider, portal: MobilePortal) {
     options: {
       redirectTo,
       skipBrowserRedirect: true,
-      queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined,
+      queryParams: { prompt: 'select_account' },
     },
   });
   if (error) throw error;
@@ -48,23 +52,25 @@ async function startOAuth(provider: Provider, portal: MobilePortal) {
 }
 
 export function SsoButtons({ mode = 'login', portal }: Props) {
-  const [busy, setBusy] = useState<Provider | null>(null);
+  const [busy, setBusy] = useState(false);
   const verb = mode === 'signup' ? 'Sign up with' : 'Continue with';
 
-  async function onPress(provider: Provider, label: string) {
+  if (!showSsoForPortal(portal)) return null;
+
+  async function onPress() {
     if (busy) return;
-    setBusy(provider);
+    setBusy(true);
     try {
-      await startOAuth(provider, portal);
+      await startOAuth('google', portal);
     } catch (e) {
       Alert.alert(
-        `${label} ${mode === 'signup' ? 'sign-up' : 'sign-in'} unavailable`,
+        `Google ${mode === 'signup' ? 'sign-up' : 'sign-in'} unavailable`,
         e instanceof Error
           ? e.message
-          : `Enable the ${label} provider in your Supabase Auth settings and add ${getAuthRedirectUrl('/auth-callback')} to Redirect URLs.`,
+          : `Enable Google in your Supabase Auth settings and add ${getAuthRedirectUrl('/auth-callback')} to Redirect URLs.`,
       );
     } finally {
-      if (Platform.OS !== 'web') setBusy(null);
+      if (Platform.OS !== 'web') setBusy(false);
     }
   }
 
@@ -72,10 +78,10 @@ export function SsoButtons({ mode = 'login', portal }: Props) {
     <View style={styles.group}>
       <Pressable
         style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
-        disabled={busy !== null}
-        onPress={() => onPress('google', 'Google')}
+        disabled={busy}
+        onPress={onPress}
       >
-        {busy === 'google' ? (
+        {busy ? (
           <ActivityIndicator size="small" color={palette.tx} />
         ) : (
           <Svg width={16} height={16} viewBox="0 0 24 24">
@@ -86,24 +92,6 @@ export function SsoButtons({ mode = 'login', portal }: Props) {
           </Svg>
         )}
         <Text style={styles.label}>{verb} Google</Text>
-      </Pressable>
-
-      <Pressable
-        style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
-        disabled={busy !== null}
-        onPress={() => onPress('azure', 'Microsoft')}
-      >
-        {busy === 'azure' ? (
-          <ActivityIndicator size="small" color={palette.tx} />
-        ) : (
-          <Svg width={15} height={15} viewBox="0 0 23 23">
-            <Rect x="1" y="1" width="10" height="10" fill="#F25022" />
-            <Rect x="12" y="1" width="10" height="10" fill="#7FBA00" />
-            <Rect x="1" y="12" width="10" height="10" fill="#00A4EF" />
-            <Rect x="12" y="12" width="10" height="10" fill="#FFB900" />
-          </Svg>
-        )}
-        <Text style={styles.label}>{verb} Microsoft</Text>
       </Pressable>
     </View>
   );

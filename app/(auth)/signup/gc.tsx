@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Field } from '@/components/ui';
 import { AuthOrDivider } from '@/components/AuthOrDivider';
 import { LegalLinks } from '@/components/LegalLinks';
-import { SsoButtons } from '@/components/SsoButtons';
+import { SsoButtons, showSsoForPortal } from '@/components/SsoButtons';
 import { useAuth } from '@/context/AuthContext';
 import { loginRouteForPortal } from '@/lib/roles';
 import { palette, radius, roleThemes } from '@/theme';
@@ -87,8 +87,12 @@ export default function GcSignup() {
             <Text style={styles.tagline}>Create your GC account</Text>
           </View>
 
-          <SsoButtons mode="signup" portal="gc" />
-          <AuthOrDivider />
+          {showSsoForPortal('gc') ? (
+            <>
+              <SsoButtons mode="signup" portal="gc" />
+              <AuthOrDivider />
+            </>
+          ) : null}
 
           <Field label="Company Name" placeholder="Dawson Construction" value={company} onChangeText={setCompany} />
           <Field label="Full Name" placeholder="Jake Dawson" value={name} onChangeText={setName} autoCapitalize="words" />
