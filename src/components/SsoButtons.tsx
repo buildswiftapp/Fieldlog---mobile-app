@@ -1,62 +1,75 @@
 import * as Linking from 'expo-linking';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
-import { setPendingUserType } from '@/lib/pendingAuth';
+import { getAuthRedirectUrl } from '@/lib/authLinking';
+import { saveOAuthPortal } from '@/lib/oauthIntent';
+import type { MobilePortal } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { palette, radius } from '@/theme';
 
 type Provider = 'google' | 'azure';
+type SsoMode = 'login' | 'signup';
 
-async function startOAuth(provider: Provider, userType: 'gc' | 'sub') {
-  await setPendingUserType(userType);
-  const redirectPath = '/auth-callback';
-  const redirectTo =
-    Platform.OS === 'web'
-      ? `${window.location.origin}${redirectPath.startsWith('/') ? redirectPath : `/${redirectPath}`}`
-      : Linking.createURL(redirectPath);
+type Props = {
+  mode?: SsoMode;
+  portal: MobilePortal;
+};
 
-  if (Platform.OS === 'web') {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo },
-    });
-    if (error) throw error;
-    return;
-  }
+async function startOAuth(provider: Provider, portal: MobilePortal) {
+  await saveOAuthPortal(portal);
+  const redirectTo = getAuthRedirectUrl('/auth-callback');
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo, skipBrowserRedirect: true },
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+      queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined,
+    },
   });
   if (error) throw error;
-  if (data?.url) {
-    await Linking.openURL(data.url);
+  if (!data?.url) throw new Error('Could not start social sign-in.');
+
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.location.assign(data.url);
+    return;
   }
+
+  await Linking.openURL(data.url);
 }
 
-export function SsoButtons({ verb = 'Continue with', userType = 'gc' }: { verb?: string; userType?: 'gc' | 'sub' }) {
+export function SsoButtons({ mode = 'login', portal }: Props) {
   const [busy, setBusy] = useState<Provider | null>(null);
+  const verb = mode === 'signup' ? 'Sign up with' : 'Continue with';
 
   async function onPress(provider: Provider, label: string) {
     if (busy) return;
     setBusy(provider);
     try {
-      await startOAuth(provider, userType);
+      await startOAuth(provider, portal);
     } catch (e) {
       Alert.alert(
-        `${label} sign-in unavailable`,
+        `${label} ${mode === 'signup' ? 'sign-up' : 'sign-in'} unavailable`,
         e instanceof Error
           ? e.message
-          : `Enable the ${label} provider in your Supabase Auth settings to use this option.`,
+          : `Enable the ${label} provider in your Supabase Auth settings and add ${getAuthRedirectUrl('/auth-callback')} to Redirect URLs.`,
       );
     } finally {
-      setBusy(null);
+      if (Platform.OS !== 'web') setBusy(null);
     }
   }
 
   return (
-    <View style={{ gap: 9 }}>
+    <View style={styles.group}>
       <Pressable
         style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
         disabled={busy !== null}
@@ -97,6 +110,7 @@ export function SsoButtons({ verb = 'Continue with', userType = 'gc' }: { verb?:
 }
 
 const styles = StyleSheet.create({
+  group: { gap: 9 },
   btn: {
     flexDirection: 'row',
     alignItems: 'center',

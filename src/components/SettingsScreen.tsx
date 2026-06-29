@@ -117,6 +117,12 @@ export function SettingsScreen({ role }: { role: 'gc' | 'sub' }) {
         await updateProfileName(profile.id, fullName);
       }
 
+      if (pendingLogoUri) {
+        const logoUrl = await uploadOrganizationLogo(organization.id, pendingLogoUri);
+        setLogoPreview(logoUrl);
+        setPendingLogoUri(null);
+      }
+
       await updateOrganization(organization.id, {
         name: companyName.trim(),
         brand_color: brandColor,
@@ -125,12 +131,6 @@ export function SettingsScreen({ role }: { role: 'gc' | 'sub' }) {
         phone: phone.trim() || null,
         website: website.trim() || null,
       });
-
-      if (pendingLogoUri) {
-        const logoUrl = await uploadOrganizationLogo(organization.id, pendingLogoUri);
-        setLogoPreview(logoUrl);
-        setPendingLogoUri(null);
-      }
 
       await refresh();
       Alert.alert('Saved', 'Your settings were updated.');

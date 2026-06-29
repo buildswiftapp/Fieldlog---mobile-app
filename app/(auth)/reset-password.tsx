@@ -12,7 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandLoader } from '@/components/BrandLoader';
 import { Button, Field } from '@/components/ui';
-import { LegalLinks } from '@/components/LegalLinks';
+import { clearAuthUrlParams, readAuthUrlParams } from '@/lib/authLinking';
+import { forgotPasswordRouteForPortal, loginRouteForPortal } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
 import { palette, radius } from '@/theme';
 
@@ -44,10 +45,12 @@ export default function ResetPassword() {
       if (started.current) return;
       started.current = true;
 
-      const code = typeof params.code === 'string' ? params.code : null;
+      const urlParams = readAuthUrlParams();
+      const code = typeof params.code === 'string' ? params.code : urlParams.code;
       try {
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          clearAuthUrlParams();
           if (exchangeError) throw exchangeError;
           if (active) {
             handled.current = true;
@@ -173,7 +176,7 @@ export default function ResetPassword() {
               {error ? <Text style={styles.error}>{error}</Text> : null}
               <Button
                 label="Request a new reset link"
-                onPress={() => router.replace('/(auth)/forgot-password')}
+                onPress={() => router.replace(forgotPasswordRouteForPortal('gc'))}
                 accent={palette.blue}
                 onAccent="#FFFFFF"
               />
@@ -182,12 +185,10 @@ export default function ResetPassword() {
 
           <Text style={styles.footer}>
             Remember your password?{' '}
-            <Link href="/(auth)/login" style={styles.link}>
+            <Link href={loginRouteForPortal('gc')} style={styles.link}>
               Back to sign in
             </Link>
           </Text>
-
-          <LegalLinks compact />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

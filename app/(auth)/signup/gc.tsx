@@ -3,10 +3,12 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Field } from '@/components/ui';
+import { AuthOrDivider } from '@/components/AuthOrDivider';
 import { LegalLinks } from '@/components/LegalLinks';
 import { SsoButtons } from '@/components/SsoButtons';
 import { useAuth } from '@/context/AuthContext';
-import { palette, roleThemes } from '@/theme';
+import { loginRouteForPortal } from '@/lib/roles';
+import { palette, radius, roleThemes } from '@/theme';
 
 export default function GcSignup() {
   const { signUp } = useAuth();
@@ -17,6 +19,8 @@ export default function GcSignup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
   async function onSubmit() {
     if (!company || !name || !email || !password) {
@@ -27,7 +31,8 @@ export default function GcSignup() {
     try {
       const result = await signUp({ email, password, fullName: name, companyName: company, userType: 'gc' });
       if (result.needsEmailConfirmation) {
-        Alert.alert('Check your email', 'Confirm your account from the email we sent, then sign in.');
+        setSubmittedEmail(email.trim());
+        setAwaitingVerification(true);
         return;
       }
       router.replace('/');
@@ -36,6 +41,37 @@ export default function GcSignup() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (awaitingVerification) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.brand}>
+            <Text style={styles.kicker}>BYLDGO</Text>
+            <Text style={styles.wordmark}>
+              <Text style={{ color: theme.accent }}>Field</Text>
+              <Text style={{ color: palette.tx }}>Log</Text>
+            </Text>
+            <Text style={[styles.tagline, { marginTop: 12 }]}>Check your email</Text>
+            <Text style={styles.verifyEmail}>{submittedEmail}</Text>
+          </View>
+
+          <View style={styles.successBox}>
+            <Text style={styles.successText}>
+              Open the verification link we sent, then sign in. Your company details will be saved automatically.
+            </Text>
+          </View>
+
+          <Button
+            label="Go to Log In"
+            onPress={() => router.replace(loginRouteForPortal('gc'))}
+            accent={theme.accent}
+            onAccent={theme.onAccent}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -51,13 +87,8 @@ export default function GcSignup() {
             <Text style={styles.tagline}>Create your GC account</Text>
           </View>
 
-          <SsoButtons verb="Sign up with" userType="gc" />
-
-          <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.or}>OR</Text>
-            <View style={styles.line} />
-          </View>
+          <SsoButtons mode="signup" portal="gc" />
+          <AuthOrDivider />
 
           <Field label="Company Name" placeholder="Dawson Construction" value={company} onChangeText={setCompany} />
           <Field label="Full Name" placeholder="Jake Dawson" value={name} onChangeText={setName} autoCapitalize="words" />
@@ -68,12 +99,12 @@ export default function GcSignup() {
 
           <Text style={styles.footer}>
             Already have an account?{' '}
-            <Link href="/(auth)/login?mode=gc" style={styles.link}>
+            <Link href={loginRouteForPortal('gc')} style={styles.link}>
               Log in
             </Link>
           </Text>
 
-          <LegalLinks compact />
+          <LegalLinks compact portal="gc" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -87,9 +118,16 @@ const styles = StyleSheet.create({
   kicker: { fontSize: 13, fontWeight: '700', letterSpacing: 1.5, color: palette.tx3, marginBottom: 4 },
   wordmark: { fontSize: 22, fontWeight: '700' },
   tagline: { fontSize: 12, color: palette.tx3, marginTop: 5 },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 18 },
-  line: { flex: 1, height: 1, backgroundColor: palette.border2 },
-  or: { fontSize: 10.5, color: palette.tx3 },
   footer: { textAlign: 'center', marginTop: 18, fontSize: 12.5, color: palette.tx2 },
   link: { color: palette.blueLight, fontWeight: '500' },
+  verifyEmail: { fontSize: 14, fontWeight: '600', color: palette.tx, marginTop: 8 },
+  successBox: {
+    backgroundColor: palette.greenDim,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.22)',
+    borderRadius: radius.md,
+    padding: 14,
+    marginBottom: 18,
+  },
+  successText: { fontSize: 12.5, color: palette.tx2, lineHeight: 18, textAlign: 'center' },
 });
