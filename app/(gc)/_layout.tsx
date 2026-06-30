@@ -44,6 +44,7 @@ export default function GcLayout() {
         name="settings"
         options={{ title: 'Settings', tabBarIcon: ({ color }) => <SettingsIcon color={color} size={21} /> }}
       />
+      <Tabs.Screen name="logs" options={{ href: null }} />
     </Tabs>
   );
 }

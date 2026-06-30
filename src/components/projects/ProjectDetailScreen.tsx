@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MailIcon, MapPinIcon, PlusIcon, TrashIcon } from '@/components/icons';
+import { ClipboardIcon, MailIcon, MapPinIcon, MicIcon, PlusIcon, TrashIcon } from '@/components/icons';
 import { Badge, Button, Card, Field } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -22,7 +22,13 @@ import {
   setProjectStatus,
   type ProjectDetail,
 } from '@/lib/projects';
+import { getProjectLogs, type LogListItem } from '@/lib/logs';
 import { palette, radius, roleThemes } from '@/theme';
+
+function formatLogDate(value: string) {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 type Props = { role: 'gc' | 'sub'; projectId: string };
 
@@ -34,10 +40,13 @@ function statusColor(status: string) {
 
 export function ProjectDetailScreen({ role, projectId }: Props) {
   const { organization } = useAuth();
+  const router = useRouter();
   const theme = roleThemes[role];
   const accent = organization?.brand_color ?? theme.accent;
+  const logsBase = role === 'gc' ? '/(gc)/logs' : '/(sub)/logs';
 
   const [detail, setDetail] = useState<ProjectDetail | null>(null);
+  const [logs, setLogs] = useState<LogListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +61,9 @@ export function ProjectDetailScreen({ role, projectId }: Props) {
   const load = useCallback(async () => {
     try {
       setError(null);
-      setDetail(await getProjectDetail(projectId));
+      const [d, l] = await Promise.all([getProjectDetail(projectId), getProjectLogs(projectId).catch(() => [])]);
+      setDetail(d);
+      setLogs(l);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load this project.');
     } finally {
@@ -189,8 +200,49 @@ export function ProjectDetailScreen({ role, projectId }: Props) {
           ) : null}
         </View>
 
+        {/* Daily logs */}
+        <View style={styles.logHeader}>
+          <Text style={styles.sectionTitle}>Daily Logs</Text>
+          {project.status === 'active' ? (
+            <Pressable
+              style={({ pressed }) => [styles.logAdd, { borderColor: accent }, pressed && { opacity: 0.7 }]}
+              onPress={() => router.push(`${logsBase}/new?projectId=${projectId}` as '/')}
+            >
+              <MicIcon color={accent} size={14} strokeWidth={2.3} />
+              <Text style={[styles.logAddText, { color: accent }]}>Record</Text>
+            </Pressable>
+          ) : null}
+        </View>
+        {logs.length === 0 ? (
+          <Text style={styles.emptyLine}>No logs yet. Tap Record to capture today’s work.</Text>
+        ) : (
+          logs.slice(0, 6).map((log) => (
+            <Card key={log.id} style={{ marginBottom: 8 }} onPress={() => router.push(`${logsBase}/${log.id}` as '/')}>
+              <View style={styles.subRow}>
+                <View style={[styles.logIcon, { backgroundColor: `${accent}22` }]}>
+                  <ClipboardIcon color={accent} size={15} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.subName} numberOfLines={1}>
+                    {log.summary || 'Daily log'}
+                  </Text>
+                  <Text style={styles.subMeta}>
+                    {formatLogDate(log.log_date)}
+                    {log.author_name ? ` · ${log.author_name}` : ''}
+                  </Text>
+                </View>
+                <Badge
+                  text={log.status === 'reviewed' ? 'Reviewed' : 'Submitted'}
+                  color={log.status === 'reviewed' ? palette.green : palette.orange}
+                  bg={log.status === 'reviewed' ? palette.greenDim : palette.orangeDim}
+                />
+              </View>
+            </Card>
+          ))
+        )}
+
         {/* Subcontractors */}
-        <Text style={styles.sectionTitle}>Subcontractors</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 18 }]}>Subcontractors</Text>
         {subcontractors.length === 0 ? (
           <Text style={styles.emptyLine}>No subcontractors assigned yet.</Text>
         ) : (
@@ -287,13 +339,7 @@ export function ProjectDetailScreen({ role, projectId }: Props) {
               />
             </View>
           </>
-        ) : (
-          <View style={styles.subNote}>
-            <Text style={styles.subNoteText}>
-              You can submit daily logs for this project from the Home tab once voice logging is enabled.
-            </Text>
-          </View>
-        )}
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -323,13 +369,17 @@ const styles = StyleSheet.create({
   formCard: { marginTop: 6, gap: 2 },
   formTitle: { fontSize: 13, fontWeight: '600', color: palette.tx, marginBottom: 10 },
   error: { color: palette.red, fontSize: 13, textAlign: 'center', paddingHorizontal: 24 },
-  subNote: {
-    marginTop: 18,
-    padding: 13,
-    backgroundColor: palette.bg2,
+  logHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  logAdd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: radius.lg,
+    marginBottom: 9,
   },
-  subNoteText: { fontSize: 12, color: palette.tx2, lineHeight: 18, textAlign: 'center' },
+  logAddText: { fontSize: 12, fontWeight: '600' },
+  logIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
 });

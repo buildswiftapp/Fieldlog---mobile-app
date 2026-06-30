@@ -32,6 +32,7 @@ export default function SubLayout() {
       <Tabs.Screen name="projects" options={{ title: 'Projects', tabBarIcon: ({ color }) => <FolderIcon color={color} size={21} /> }} />
       <Tabs.Screen name="notifications" options={{ title: 'Alerts', tabBarIcon: ({ color }) => <BellIcon color={color} size={21} /> }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color }) => <SettingsIcon color={color} size={21} /> }} />
+      <Tabs.Screen name="logs" options={{ href: null }} />
     </Tabs>
   );
 }
