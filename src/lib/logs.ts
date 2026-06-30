@@ -2,7 +2,7 @@ import type { AlertSeverity, LogStatus, LogStructured } from '@/lib/database.typ
 import type { AiAlert } from '@/lib/ai';
 import { supabase } from '@/lib/supabase';
 
-const PHOTO_BUCKET = 'daily-log-photos';
+const PHOTO_BUCKET = 'photos';
 
 export type LogListItem = {
   id: string;
@@ -107,13 +107,39 @@ export async function getHomeStats(): Promise<HomeStats> {
   return data as HomeStats;
 }
 
-export function logPhotoUrl(storagePath: string) {
-  return supabase.storage.from(PHOTO_BUCKET).getPublicUrl(storagePath).data.publicUrl;
+// After a sub submits a log, ask the web app to email the GC a review link.
+// Best-effort: if the web URL or Resend isn't configured, this silently no-ops.
+export async function requestLogReviewEmail(logId: string) {
+  const base = process.env.EXPO_PUBLIC_AUTH_API_URL?.replace(/\/$/, '');
+  if (!base) return;
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+  if (!accessToken) return;
+  try {
+    await fetch(`${base}/api/review/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ logId }),
+    });
+  } catch {
+    // Non-fatal — the GC can still review the log in-app.
+  }
 }
 
-export async function uploadLogPhoto(logId: string, uri: string) {
+// `photos` is a private, org-folder-scoped bucket, so reads need a signed URL.
+export async function getLogPhotoUrl(storagePath: string, expiresInSeconds = 3600) {
+  const { data, error } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .createSignedUrl(storagePath, expiresInSeconds);
+  if (error || !data) return null;
+  return data.signedUrl;
+}
+
+// Object paths must begin with the owning organization id to satisfy the
+// storage RLS policy (photos_member_rw): {org_id}/{log_id}/{file}.
+export async function uploadLogPhoto(orgId: string, logId: string, uri: string) {
   const ext = uri.match(/\.([a-zA-Z0-9]+)(?:\?|$)/)?.[1]?.toLowerCase() ?? 'jpg';
-  const path = `${logId}/${Date.now()}.${ext}`;
+  const path = `${orgId}/${logId}/${Date.now()}.${ext}`;
   const response = await fetch(uri);
   const arrayBuffer = await response.arrayBuffer();
   const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';

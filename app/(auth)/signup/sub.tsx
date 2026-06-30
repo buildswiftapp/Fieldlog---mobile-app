@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Field } from '@/components/ui';
+import { AppModeToggle } from '@/components/AppModeToggle';
 import { useAuth } from '@/context/AuthContext';
-import { loginRouteForPortal } from '@/lib/roles';
+import { loginRouteForPortal, signupRouteForPortal } from '@/lib/roles';
 import { palette, radius, roleThemes } from '@/theme';
 
 export default function SubSignup() {
@@ -16,8 +17,6 @@ export default function SubSignup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [awaitingVerification, setAwaitingVerification] = useState(false);
-  const [submittedEmail, setSubmittedEmail] = useState('');
 
   async function onSubmit() {
     if (!company || !name || !email || !password) {
@@ -28,8 +27,9 @@ export default function SubSignup() {
     try {
       const result = await signUp({ email, password, fullName: name, companyName: company, userType: 'sub' });
       if (result.needsEmailConfirmation) {
-        setSubmittedEmail(email.trim());
-        setAwaitingVerification(true);
+        router.replace(
+          `/(auth)/login/sub?checkEmail=1&email=${encodeURIComponent(email.trim())}` as '/',
+        );
         return;
       }
       router.replace('/');
@@ -40,42 +40,14 @@ export default function SubSignup() {
     }
   }
 
-  if (awaitingVerification) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <View style={styles.brand}>
-            <Text style={styles.title}>Check your email</Text>
-            <Text style={styles.tagline}>We sent a verification link to</Text>
-            <Text style={styles.email}>{submittedEmail}</Text>
-          </View>
-
-          <View style={styles.successBox}>
-            <Text style={styles.successText}>
-              Open the link in that email to verify your account. After verifying, sign in and your company details
-              will be saved automatically.
-            </Text>
-          </View>
-
-          <Button
-            label="Go to Sign In"
-            onPress={() => router.replace(loginRouteForPortal('sub'))}
-            accent={theme.accent}
-            onAccent={theme.onAccent}
-          />
-
-          <Text style={styles.resendHint}>
-            Didn&apos;t get it? Check spam, or wait a minute and try creating the account again with the same email.
-          </Text>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <View style={styles.toggleRow}>
+            <AppModeToggle mode="sub" onChange={(mode) => mode === 'gc' && router.replace(signupRouteForPortal('gc'))} />
+          </View>
+
           <View style={styles.brand}>
             <Text style={styles.title}>Create Your Account</Text>
             <Text style={styles.tagline}>Free for subcontractors · invited by your GC</Text>
@@ -109,6 +81,7 @@ export default function SubSignup() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 32 },
+  toggleRow: { alignItems: 'center', marginBottom: 20 },
   brand: { alignItems: 'center', marginBottom: 26 },
   title: { fontSize: 19, fontWeight: '600', marginBottom: 3, color: palette.tx },
   tagline: { fontSize: 12.5, color: palette.tx, textAlign: 'center', opacity: 0.88 },

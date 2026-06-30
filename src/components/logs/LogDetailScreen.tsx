@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AlertTriangleIcon } from '@/components/icons';
 import { Badge, Button, Card } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
-import { getLogDetail, logPhotoUrl, reviewLog, type LogDetail } from '@/lib/logs';
+import { getLogDetail, getLogPhotoUrl, reviewLog, type LogDetail } from '@/lib/logs';
 import { palette, radius, roleThemes } from '@/theme';
 
 type Props = { role: 'gc' | 'sub'; logId: string };
@@ -21,6 +21,7 @@ export function LogDetailScreen({ role, logId }: Props) {
   const accent = organization?.brand_color ?? theme.accent;
 
   const [detail, setDetail] = useState<LogDetail | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState(false);
@@ -28,7 +29,12 @@ export function LogDetailScreen({ role, logId }: Props) {
   const load = useCallback(async () => {
     try {
       setError(null);
-      setDetail(await getLogDetail(logId));
+      const next = await getLogDetail(logId);
+      setDetail(next);
+      const entries = await Promise.all(
+        next.photos.map(async (p) => [p.id, await getLogPhotoUrl(p.storage_path)] as const),
+      );
+      setPhotoUrls(Object.fromEntries(entries.filter(([, url]) => url) as [string, string][]));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load this log.');
     } finally {
@@ -137,9 +143,11 @@ export function LogDetailScreen({ role, logId }: Props) {
 
         {photos.length > 0 ? (
           <View style={styles.photoRow}>
-            {photos.map((p) => (
-              <Image key={p.id} source={{ uri: logPhotoUrl(p.storage_path) }} style={styles.photo} />
-            ))}
+            {photos.map((p) =>
+              photoUrls[p.id] ? (
+                <Image key={p.id} source={{ uri: photoUrls[p.id] }} style={styles.photo} />
+              ) : null,
+            )}
           </View>
         ) : null}
 

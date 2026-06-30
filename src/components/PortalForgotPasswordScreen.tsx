@@ -6,8 +6,8 @@ import { Button, Field } from '@/components/ui';
 import { LegalLinks } from '@/components/LegalLinks';
 import { MicIcon } from '@/components/icons';
 import { getAuthRedirectUrl } from '@/lib/authLinking';
-import { requestPasswordResetEmail } from '@/lib/emailAuth';
 import { loginRouteForPortal, type MobilePortal } from '@/lib/roles';
+import { supabase } from '@/lib/supabase';
 import { palette, radius, roleThemes } from '@/theme';
 
 const RESEND_SECONDS = 60;
@@ -39,8 +39,10 @@ export function PortalForgotPasswordScreen({ portal }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const redirectTo = getAuthRedirectUrl('/reset-password');
-      await requestPasswordResetEmail({ email: email.trim(), redirectTo });
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: getAuthRedirectUrl('/reset-password'),
+      });
+      if (resetError) throw resetError;
       setSent(true);
       setCooldown(RESEND_SECONDS);
     } catch {

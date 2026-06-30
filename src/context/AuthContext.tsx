@@ -2,11 +2,12 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Organization, Profile, UserType } from '@/lib/database.types';
 import { getAuthRedirectUrl } from '@/lib/authLinking';
-import { requestSignupEmail } from '@/lib/emailAuth';
 import {
   clearPendingSignup,
+  clearSignupPortal,
   getSignupCompletionData,
   savePendingSignup,
+  saveSignupPortal,
   signupMetadataFromPayload,
   signupPayloadFromArgs,
 } from '@/lib/pendingSignup';
@@ -113,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function completePendingSignupIfNeeded(user: User, currentOrganization: Organization | null) {
     if (currentOrganization) {
       await clearPendingSignup();
+      await clearSignupPortal();
       return currentOrganization;
     }
 
@@ -130,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
 
     await clearPendingSignup();
+    await clearSignupPortal();
     const loaded = await loadProfile(user.id);
     return loaded.organization;
   }
@@ -256,14 +259,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           trade,
         });
 
-        await requestSignupEmail({
+        // Native Supabase Auth sends the confirmation email (configured in the
+        // Supabase dashboard). The link returns to fieldlog://auth-callback,
+        // where the pending org details below are used to bootstrap the org.
+        const { data, error } = await supabase.auth.signUp({
           email: pendingPayload.email,
           password,
-          redirectTo: getAuthRedirectUrl('/auth-callback'),
-          metadata: signupMetadataFromPayload(pendingPayload),
+          options: {
+            emailRedirectTo: getAuthRedirectUrl('/auth-callback'),
+            data: signupMetadataFromPayload(pendingPayload),
+          },
         });
+        if (error) throw new Error(friendlyAuthError(error.message));
+
+        // Existing confirmed email: Supabase returns a user with no identities
+        // (and no error) instead of revealing the account exists.
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          throw new Error('An account with this email already exists. Sign in instead.');
+        }
 
         await savePendingSignup(pendingPayload);
+        await saveSignupPortal(pendingPayload.userType);
+
+        // With "Confirm email" enabled, no session is returned — the user must
+        // verify via the emailed link first. If a session IS returned, the
+        // project has confirmation disabled; sign out so we never enter the app
+        // without verification (enable Confirm email in Supabase to send links).
+        if (data.session) {
+          await supabase.auth.signOut();
+        }
         return { needsEmailConfirmation: true };
       },
       signOut: async () => {
@@ -281,6 +305,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error) throw error;
         await clearPendingSignup();
+        await clearSignupPortal();
         if (session?.user) {
           await persistUserType(session.user.id, userType);
           await loadProfile(session.user.id);

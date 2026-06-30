@@ -2,20 +2,37 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { BrandLoader } from '@/components/BrandLoader';
 import { clearAuthUrlParams, readAuthUrlParams } from '@/lib/authLinking';
+import { loadOAuthPortal } from '@/lib/oauthIntent';
 import { finalizeOAuthSession } from '@/lib/oauthSession';
-import { loginRouteForPortal } from '@/lib/roles';
+import { loadPendingSignup, loadSignupPortal, resolveSignupPortal } from '@/lib/pendingSignup';
+import { loginRouteForPortal, type MobilePortal } from '@/lib/roles';
 import { supabase } from '@/lib/supabase';
+
+async function defaultPortal(): Promise<MobilePortal> {
+  const saved = await loadSignupPortal();
+  if (saved) return saved;
+  const pending = await loadPendingSignup();
+  return pending?.userType === 'sub' ? 'sub' : 'gc';
+}
 
 export default function AuthCallback() {
   const params = useLocalSearchParams<{ code?: string; error?: string; error_description?: string; type?: string }>();
   const router = useRouter();
-  const [message, setMessage] = useState('Confirming your sign-in…');
+  const [message, setMessage] = useState('Confirming your email…');
   const [isError, setIsError] = useState(false);
   const started = useRef(false);
 
   useEffect(() => {
     let active = true;
     let redirectTimer: ReturnType<typeof setTimeout> | undefined;
+
+    async function goToLogin(portal: MobilePortal, verified = false) {
+      const query = verified ? '?verified=1' : '';
+      redirectTimer = setTimeout(
+        () => active && router.replace(`${loginRouteForPortal(portal)}${query}` as '/'),
+        verified ? 0 : 2200,
+      );
+    }
 
     async function run() {
       if (started.current) return;
@@ -27,14 +44,15 @@ export default function AuthCallback() {
       const errorDescription =
         typeof params.error_description === 'string' ? params.error_description : urlParams.errorDescription;
       const type = typeof params.type === 'string' ? params.type : urlParams.type;
+      const portal = await defaultPortal();
 
       if (oauthError || errorDescription) {
         clearAuthUrlParams();
         if (active) {
           setIsError(true);
-          setMessage(errorDescription ?? oauthError ?? 'Sign-in was cancelled.');
+          setMessage(errorDescription ?? oauthError ?? 'Email confirmation failed.');
         }
-        redirectTimer = setTimeout(() => active && router.replace(loginRouteForPortal('gc')), 2200);
+        await goToLogin(portal);
         return;
       }
 
@@ -51,12 +69,13 @@ export default function AuthCallback() {
         clearAuthUrlParams();
         if (active) {
           setIsError(true);
-          setMessage('Missing sign-in confirmation code.');
+          setMessage('Missing confirmation code.');
         }
-        redirectTimer = setTimeout(() => active && router.replace(loginRouteForPortal('gc')), 2200);
+        await goToLogin(portal);
         return;
       }
 
+      const oauthPortal = await loadOAuthPortal();
       const { data: existing, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         clearAuthUrlParams();
@@ -64,7 +83,7 @@ export default function AuthCallback() {
           setIsError(true);
           setMessage(sessionError.message);
         }
-        redirectTimer = setTimeout(() => active && router.replace(loginRouteForPortal('gc')), 2200);
+        await goToLogin(portal);
         return;
       }
 
@@ -77,7 +96,7 @@ export default function AuthCallback() {
             setIsError(true);
             setMessage(exchangeError.message);
           }
-          redirectTimer = setTimeout(() => active && router.replace(loginRouteForPortal('gc')), 2200);
+          await goToLogin(portal);
           return;
         }
         session = data.session;
@@ -88,26 +107,35 @@ export default function AuthCallback() {
       if (!session) {
         if (active) {
           setIsError(true);
-          setMessage('Could not establish a session.');
+          setMessage('Could not confirm your email.');
         }
-        redirectTimer = setTimeout(() => active && router.replace(loginRouteForPortal('gc')), 2200);
+        await goToLogin(portal);
         return;
       }
 
-      const result = await finalizeOAuthSession(session);
-      if (!result.ok) {
-        if (active) {
-          setIsError(true);
-          setMessage(result.message);
+      // Social sign-in (Google) — keep session and finish OAuth setup.
+      if (oauthPortal) {
+        const result = await finalizeOAuthSession(session);
+        if (!result.ok) {
+          if (active) {
+            setIsError(true);
+            setMessage(result.message);
+          }
+          await goToLogin(result.returnPortal);
+          return;
         }
-        redirectTimer = setTimeout(
-          () => active && router.replace(loginRouteForPortal(result.returnPortal)),
-          2200,
-        );
+        if (active) setMessage('Signed in. Finishing setup…');
         return;
       }
 
-      if (active) setMessage('Signed in. Finishing setup…');
+      // Email confirmation — verify succeeded; open the correct login screen.
+      const loginPortal = await resolveSignupPortal(session);
+      await supabase.auth.signOut();
+      if (active) {
+        setMessage('Email confirmed. Opening sign in…');
+        setIsError(false);
+      }
+      await goToLogin(loginPortal, true);
     }
 
     void run();

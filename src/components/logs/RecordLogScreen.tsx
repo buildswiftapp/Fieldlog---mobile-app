@@ -19,7 +19,7 @@ import { Badge, Button, Card, Field } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { structureLog, transcribeAudio, type AiAlert, type StructuredLogResult } from '@/lib/ai';
 import { ensureMicPermission, startRecording, stopRecording } from '@/lib/audioRecorder';
-import { createDailyLog, uploadLogPhoto } from '@/lib/logs';
+import { createDailyLog, requestLogReviewEmail, uploadLogPhoto } from '@/lib/logs';
 import { listMyProjects, type ProjectListItem } from '@/lib/projects';
 import { palette, radius, roleThemes } from '@/theme';
 
@@ -155,10 +155,15 @@ export function RecordLogScreen({ role, projectId }: Props) {
 
       for (const uri of photos) {
         try {
-          await uploadLogPhoto(created.id, uri);
+          if (organization?.id) await uploadLogPhoto(organization.id, created.id, uri);
         } catch {
           // A failed photo upload should not block the log submission.
         }
+      }
+
+      // Sub submissions notify the GC by email with a tokenized review link.
+      if (role === 'sub') {
+        await requestLogReviewEmail(created.id);
       }
 
       router.back();

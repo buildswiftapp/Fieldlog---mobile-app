@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { BellIcon, FolderIcon, HomeIcon, SettingsIcon } from '@/components/icons';
 import { BrandLoader } from '@/components/BrandLoader';
+import { NotificationsProvider, useNotifications } from '@/context/NotificationsContext';
 import { usePortalGuard } from '@/hooks/usePortalGuard';
 import { palette, roleThemes } from '@/theme';
 
@@ -10,6 +11,16 @@ export default function SubLayout() {
   if (!ready) {
     return <BrandLoader accent={roleThemes.sub.accent} message="Setting up your site…" />;
   }
+
+  return (
+    <NotificationsProvider>
+      <SubTabs />
+    </NotificationsProvider>
+  );
+}
+
+function SubTabs() {
+  const { unread } = useNotifications();
 
   return (
     <Tabs
@@ -30,7 +41,15 @@ export default function SubLayout() {
     >
       <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: ({ color }) => <HomeIcon color={color} size={21} /> }} />
       <Tabs.Screen name="projects" options={{ title: 'Projects', tabBarIcon: ({ color }) => <FolderIcon color={color} size={21} /> }} />
-      <Tabs.Screen name="notifications" options={{ title: 'Alerts', tabBarIcon: ({ color }) => <BellIcon color={color} size={21} /> }} />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Alerts',
+          tabBarIcon: ({ color }) => <BellIcon color={color} size={21} />,
+          tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
+          tabBarBadgeStyle: { backgroundColor: palette.red, fontSize: 10 },
+        }}
+      />
       <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color }) => <SettingsIcon color={color} size={21} /> }} />
       <Tabs.Screen name="logs" options={{ href: null }} />
     </Tabs>

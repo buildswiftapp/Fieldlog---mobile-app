@@ -5,8 +5,22 @@ export type MemberStatus = 'active' | 'invited' | 'idle' | 'revoked';
 export type ProjectStatus = 'active' | 'archived';
 export type SubAssignmentStatus = 'pending' | 'active' | 'removed';
 export type InviteStatus = 'pending' | 'accepted' | 'revoked';
-export type LogStatus = 'draft' | 'submitted' | 'reviewed';
+export type LogStatus = 'draft' | 'submitted' | 'reviewed' | 'rejected';
 export type AlertSeverity = 'info' | 'warning';
+export type NotificationKind = 'log_submitted' | 'log_reviewed' | 'log_alert' | 'sub_assigned';
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  organization_id: string | null;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  project_id: string | null;
+  log_id: string | null;
+  read_at: string | null;
+  created_at: string;
+};
 
 export type LogStructured = {
   crew_count?: number | null;
@@ -31,6 +45,7 @@ export type DailyLog = {
   crew_count: number | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
+  review_note: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -174,6 +189,12 @@ export interface Database {
         Update: Partial<{ message: string; severity: AlertSeverity; kind: string | null }>;
         Relationships: [];
       };
+      notifications: {
+        Row: Notification;
+        Insert: Partial<Notification> & { user_id: string; kind: NotificationKind; title: string };
+        Update: Partial<Pick<Notification, 'read_at'>>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -233,6 +254,10 @@ export interface Database {
       fl_log_detail: { Args: { p_id: string }; Returns: unknown };
       fl_review_log: { Args: { p_id: string }; Returns: undefined };
       fl_home_stats: { Args: Record<string, never>; Returns: unknown };
+      fl_my_notifications: { Args: { p_limit?: number; p_unread_only?: boolean }; Returns: unknown };
+      fl_unread_notification_count: { Args: Record<string, never>; Returns: number };
+      fl_mark_notification_read: { Args: { p_id: string }; Returns: undefined };
+      fl_mark_all_notifications_read: { Args: Record<string, never>; Returns: undefined };
     };
     Enums: {
       org_type: OrgType;

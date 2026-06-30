@@ -48,10 +48,11 @@ function RootNavigator() {
         router.replace(homeRouteForPortal(userType));
         return;
       }
-      if (inAuth && authScreen === 'auth-callback' && session) {
-      } else {
+      // auth-callback manages email confirm → login; reset-password manages recovery.
+      if (inAuth && (authScreen === 'auth-callback' || authScreen === 'reset-password')) {
         return;
       }
+      return;
     }
 
     if (userType === 'owner') {
