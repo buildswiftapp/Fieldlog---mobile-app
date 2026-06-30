@@ -95,3 +95,63 @@ export const ListIcon = ({ size, color, strokeWidth }: IconProps) => (
     <Line x1="3" y1="18" x2="3.01" y2="18" />
   </Svg>
 );
+
+export const PlusIcon = ({ size, color, strokeWidth }: IconProps) => (
+  <Svg {...base(size, color, strokeWidth)}>
+    <Line x1="12" y1="5" x2="12" y2="19" />
+    <Line x1="5" y1="12" x2="19" y2="12" />
+  </Svg>
+);
+
+export const MapPinIcon = ({ size, color, strokeWidth }: IconProps) => (
+  <Svg {...base(size, color, strokeWidth)}>
+    <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+    <Circle cx="12" cy="10" r="3" />
+  </Svg>
+);
+
+export const UsersIcon = ({ size, color, strokeWidth }: IconProps) => (
+  <Svg {...base(size, color, strokeWidth)}>
+    <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <Circle cx="9" cy="7" r="4" />
+    <Path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <Path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </Svg>
+);
+
+export const TrashIcon = ({ size, color, strokeWidth }: IconProps) => (
+  <Svg {...base(size, color, strokeWidth)}>
+    <Polyline points="3 6 5 6 21 6" />
+    <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+  </Svg>
+);
+
+export const MailIcon = ({ size, color, strokeWidth }: IconProps) => (
+  <Svg {...base(size, color, strokeWidth)}>
+    <Rect x="2" y="4" width="20" height="16" rx="2" />
+    <Polyline points="22,6 12,13 2,6" />
+  </Svg>
+);
+
+export const HardHatIcon = ({ size, color, strokeWidth }: IconProps) => (
+  <Svg {...base(size, color, strokeWidth)}>
+    <Path d="M2 18a10 10 0 0 1 20 0" />
+    <Path d="M10 8V5a2 2 0 0 1 4 0v3" />
+    <Line x1="1" y1="18" x2="23" y2="18" />
+    <Path d="M7 18v-3a5 5 0 0 1 10 0v3" />
+  </Svg>
+);
+
+export const ClipboardIcon = ({ size, color, strokeWidth }: IconProps) => (
+  <Svg {...base(size, color, strokeWidth)}>
+    <Path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <Rect x="8" y="2" width="8" height="4" rx="1" />
+  </Svg>
+);
+
+export const CameraIcon = ({ size, color, strokeWidth }: IconProps) => (
+  <Svg {...base(size, color, strokeWidth)}>
+    <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <Circle cx="12" cy="13" r="4" />
+  </Svg>
+);

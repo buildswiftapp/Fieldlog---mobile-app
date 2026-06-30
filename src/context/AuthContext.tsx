@@ -2,7 +2,14 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Organization, Profile, UserType } from '@/lib/database.types';
 import { getAuthRedirectUrl } from '@/lib/authLinking';
-import { clearPendingSignup, getSignupCompletionData, loadPendingSignup, savePendingSignup, signupMetadataFromPayload, signupPayloadFromArgs } from '@/lib/pendingSignup';
+import { requestSignupEmail } from '@/lib/emailAuth';
+import {
+  clearPendingSignup,
+  getSignupCompletionData,
+  savePendingSignup,
+  signupMetadataFromPayload,
+  signupPayloadFromArgs,
+} from '@/lib/pendingSignup';
 import {
   type MobilePortal,
   portalMismatchMessage,
@@ -249,35 +256,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           trade,
         });
 
-        const { data, error } = await supabase.auth.signUp({
+        await requestSignupEmail({
           email: pendingPayload.email,
           password,
-          options: {
-            emailRedirectTo: getAuthRedirectUrl('/auth-callback'),
-            data: signupMetadataFromPayload(pendingPayload),
-          },
+          redirectTo: getAuthRedirectUrl('/auth-callback'),
+          metadata: signupMetadataFromPayload(pendingPayload),
         });
-        if (error) throw error;
 
-        if (!data.session) {
-          await savePendingSignup(pendingPayload);
-          return { needsEmailConfirmation: true };
-        }
-
-        const { error: rpcError } = await supabase.rpc('fl_bootstrap_organization', {
-          p_name: companyName,
-          p_type: userType,
-          p_trade: trade ?? null,
-          p_brand_color: userType === 'gc' ? '#F59E0B' : '#8B5CF6',
-        });
-        if (rpcError) throw rpcError;
-
-        await clearPendingSignup();
-        if (data.user) {
-          await persistUserType(data.user.id, userType);
-          await loadProfile(data.user.id);
-        }
-        return { needsEmailConfirmation: false };
+        await savePendingSignup(pendingPayload);
+        return { needsEmailConfirmation: true };
       },
       signOut: async () => {
         await supabase.auth.signOut();
