@@ -2,7 +2,15 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Organization, Profile, UserType } from '@/lib/database.types';
 import { getAuthRedirectUrl } from '@/lib/authLinking';
-import { clearPendingSignup, getSignupCompletionData, loadPendingSignup, savePendingSignup, signupMetadataFromPayload, signupPayloadFromArgs } from '@/lib/pendingSignup';
+import {
+  clearPendingSignup,
+  clearSignupPortal,
+  getSignupCompletionData,
+  savePendingSignup,
+  saveSignupPortal,
+  signupMetadataFromPayload,
+  signupPayloadFromArgs,
+} from '@/lib/pendingSignup';
 import {
   type MobilePortal,
   portalMismatchMessage,
@@ -106,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function completePendingSignupIfNeeded(user: User, currentOrganization: Organization | null) {
     if (currentOrganization) {
       await clearPendingSignup();
+      await clearSignupPortal();
       return currentOrganization;
     }
 
@@ -123,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
 
     await clearPendingSignup();
+    await clearSignupPortal();
     const loaded = await loadProfile(user.id);
     return loaded.organization;
   }
@@ -257,27 +267,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             data: signupMetadataFromPayload(pendingPayload),
           },
         });
-        if (error) throw error;
+        if (error) throw new Error(friendlyAuthError(error.message));
 
-        if (!data.session) {
-          await savePendingSignup(pendingPayload);
-          return { needsEmailConfirmation: true };
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          throw new Error('An account with this email already exists. Sign in instead.');
         }
 
-        const { error: rpcError } = await supabase.rpc('fl_bootstrap_organization', {
-          p_name: companyName,
-          p_type: userType,
-          p_trade: trade ?? null,
-          p_brand_color: userType === 'gc' ? '#F59E0B' : '#8B5CF6',
-        });
-        if (rpcError) throw rpcError;
+        await savePendingSignup(pendingPayload);
+        await saveSignupPortal(pendingPayload.userType);
 
-        await clearPendingSignup();
-        if (data.user) {
-          await persistUserType(data.user.id, userType);
-          await loadProfile(data.user.id);
+        if (data.session) {
+          await supabase.auth.signOut();
         }
-        return { needsEmailConfirmation: false };
+        return { needsEmailConfirmation: true };
       },
       signOut: async () => {
         await supabase.auth.signOut();
@@ -294,6 +296,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error) throw error;
         await clearPendingSignup();
+        await clearSignupPortal();
         if (session?.user) {
           await persistUserType(session.user.id, userType);
           await loadProfile(session.user.id);

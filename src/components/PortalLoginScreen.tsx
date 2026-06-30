@@ -1,7 +1,8 @@
-import { Link } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppModeToggle } from '@/components/AppModeToggle';
 import { Button, Field } from '@/components/ui';
 import { AuthOrDivider } from '@/components/AuthOrDivider';
 import { LegalLinks } from '@/components/LegalLinks';
@@ -17,11 +18,25 @@ type Props = {
 
 export function PortalLoginScreen({ portal }: Props) {
   const { signIn } = useAuth();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ verified?: string; checkEmail?: string; email?: string }>();
   const theme = roleThemes[portal];
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(typeof params.email === 'string' ? params.email : '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const emailConfirmed = params.verified === '1';
+  const awaitingEmail = params.checkEmail === '1';
+
+  function switchPortal(next: MobilePortal) {
+    if (next === portal) return;
+    const qs = new URLSearchParams();
+    if (emailConfirmed) qs.set('verified', '1');
+    if (awaitingEmail) qs.set('checkEmail', '1');
+    if (email.trim()) qs.set('email', email.trim());
+    const query = qs.toString();
+    router.replace(`${loginRouteForPortal(next)}${query ? `?${query}` : ''}` as '/');
+  }
 
   async function onSubmit() {
     if (!email.trim() || !password) {
@@ -40,12 +55,14 @@ export function PortalLoginScreen({ portal }: Props) {
     }
   }
 
-  const otherPortal: MobilePortal = portal === 'gc' ? 'sub' : 'gc';
-
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <View style={styles.toggleRow}>
+            <AppModeToggle mode={portal} onChange={switchPortal} />
+          </View>
+
           {portal === 'gc' ? (
             <View style={styles.brand}>
               <Text style={styles.kicker}>BYLDGO</Text>
@@ -64,6 +81,23 @@ export function PortalLoginScreen({ portal }: Props) {
               <Text style={styles.subTagline}>Subcontractor Portal</Text>
             </View>
           )}
+
+          {emailConfirmed ? (
+            <View style={styles.successBox}>
+              <Text style={styles.successText}>
+                Your email is confirmed. Sign in with the password you created during registration.
+              </Text>
+            </View>
+          ) : null}
+
+          {awaitingEmail && !emailConfirmed ? (
+            <View style={styles.successBox}>
+              <Text style={styles.successText}>
+                We sent a verification link{email ? ` to ${email}` : ''}. Open it to confirm your account, then sign
+                in here.
+              </Text>
+            </View>
+          ) : null}
 
           {showSsoForPortal(portal) ? (
             <>
@@ -118,13 +152,6 @@ export function PortalLoginScreen({ portal }: Props) {
             </Link>
           </Text>
 
-          <Text style={styles.switchPortal}>
-            {otherPortal === 'sub' ? 'Subcontractor?' : 'General contractor?'}{' '}
-            <Link href={loginRouteForPortal(otherPortal)} style={styles.link}>
-              {otherPortal === 'sub' ? 'Go to Sub Portal' : 'Go to GC Portal'}
-            </Link>
-          </Text>
-
           {portal === 'sub' ? (
             <View style={styles.note}>
               <Text style={styles.noteText}>
@@ -143,6 +170,7 @@ export function PortalLoginScreen({ portal }: Props) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: palette.bg },
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingTop: 8, paddingBottom: 32 },
+  toggleRow: { alignItems: 'center', marginBottom: 20 },
   brand: { alignItems: 'center', marginBottom: 24 },
   kicker: { fontSize: 13, fontWeight: '700', letterSpacing: 1.5, color: palette.tx3, marginBottom: 4 },
   wordmark: { fontSize: 26, fontWeight: '700' },
@@ -169,7 +197,6 @@ const styles = StyleSheet.create({
   error: { color: palette.red, fontSize: 12.5, marginBottom: 12, lineHeight: 18 },
   forgot: { fontSize: 11.5, textAlign: 'right', marginTop: -2, marginBottom: 16 },
   footer: { textAlign: 'center', marginTop: 18, fontSize: 12, color: palette.tx2 },
-  switchPortal: { textAlign: 'center', marginTop: 14, fontSize: 11.5, color: palette.tx3 },
   link: { color: palette.blueLight, fontWeight: '500' },
   note: {
     marginTop: 20,
@@ -180,4 +207,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
   },
   noteText: { fontSize: 11, color: palette.tx3, lineHeight: 17, textAlign: 'center' },
+  successBox: {
+    backgroundColor: palette.greenDim,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.22)',
+    borderRadius: radius.md,
+    padding: 14,
+    marginBottom: 16,
+  },
+  successText: { fontSize: 12.5, color: palette.tx2, lineHeight: 18, textAlign: 'center' },
 });

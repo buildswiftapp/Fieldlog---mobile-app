@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
+    "start": "bash scripts/with-android-env.sh expo start",
+    "android": "bash scripts/with-android-env.sh expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.45.4",
     "expo": "~52.0.0",
     "expo-asset": "~11.0.5",
+    "expo-av": "~15.0.2",
     "expo-constants": "~17.0.3",
     "expo-font": "~13.0.4",
     "expo-image-picker": "~16.0.6",

@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { User } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
+import type { MobilePortal } from '@/lib/roles';
 
 const KEY = 'fl_pending_signup';
+const PORTAL_KEY = 'fl_signup_portal';
 
 export type PendingSignup = {
   email: string;
@@ -27,6 +29,20 @@ export async function loadPendingSignup(): Promise<PendingSignup | null> {
 
 export async function clearPendingSignup() {
   await AsyncStorage.removeItem(KEY);
+}
+
+/** Remember which portal (gc/sub) the user registered under — survives email confirm. */
+export async function saveSignupPortal(portal: MobilePortal) {
+  await AsyncStorage.setItem(PORTAL_KEY, portal);
+}
+
+export async function loadSignupPortal(): Promise<MobilePortal | null> {
+  const value = await AsyncStorage.getItem(PORTAL_KEY);
+  return value === 'gc' || value === 'sub' ? value : null;
+}
+
+export async function clearSignupPortal() {
+  await AsyncStorage.removeItem(PORTAL_KEY);
 }
 
 function fromUserMetadata(user: User): PendingSignup | null {
@@ -84,4 +100,18 @@ export function signupMetadataFromPayload(payload: PendingSignup) {
     company_name: payload.companyName,
     ...(payload.trade ? { trade: payload.trade } : {}),
   };
+}
+
+/** Which portal login to open after email confirmation (sub vs gc). */
+export async function resolveSignupPortal(session: Session): Promise<MobilePortal> {
+  const saved = await loadSignupPortal();
+  if (saved) return saved;
+
+  const pending = await loadPendingSignup();
+  if (pending?.userType === 'sub') return 'sub';
+  if (pending?.userType === 'gc') return 'gc';
+
+  const meta = session.user.user_metadata?.user_type;
+  if (meta === 'sub') return 'sub';
+  return 'gc';
 }

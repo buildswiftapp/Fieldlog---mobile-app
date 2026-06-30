@@ -36,7 +36,13 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow FieldLog to access your photos so you can upload your company logo."
+          "photosPermission": "Allow FieldLog to access your photos so you can attach jobsite photos and your company logo."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow FieldLog to use the microphone so you can record voice daily logs."
         }
       ]
     ],

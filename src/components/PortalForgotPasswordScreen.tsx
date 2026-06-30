@@ -39,14 +39,10 @@ export function PortalForgotPasswordScreen({ portal }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const redirectTo = getAuthRedirectUrl('/reset-password');
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo,
+        redirectTo: getAuthRedirectUrl('/reset-password'),
       });
-      if (resetError) {
-        setError(resetError.message);
-        return;
-      }
+      if (resetError) throw resetError;
       setSent(true);
       setCooldown(RESEND_SECONDS);
     } catch {

@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { BellIcon, FolderIcon, HomeIcon, SettingsIcon } from '@/components/icons';
 import { BrandLoader } from '@/components/BrandLoader';
+import { NotificationsProvider, useNotifications } from '@/context/NotificationsContext';
 import { usePortalGuard } from '@/hooks/usePortalGuard';
 import { palette, roleThemes } from '@/theme';
 
@@ -10,6 +11,16 @@ export default function GcLayout() {
   if (!ready) {
     return <BrandLoader accent={roleThemes.gc.accent} message="Setting up your site…" />;
   }
+
+  return (
+    <NotificationsProvider>
+      <GcTabs />
+    </NotificationsProvider>
+  );
+}
+
+function GcTabs() {
+  const { unread } = useNotifications();
 
   return (
     <Tabs
@@ -38,12 +49,18 @@ export default function GcLayout() {
       />
       <Tabs.Screen
         name="notifications"
-        options={{ title: 'Alerts', tabBarIcon: ({ color }) => <BellIcon color={color} size={21} /> }}
+        options={{
+          title: 'Alerts',
+          tabBarIcon: ({ color }) => <BellIcon color={color} size={21} />,
+          tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
+          tabBarBadgeStyle: { backgroundColor: palette.red, fontSize: 10 },
+        }}
       />
       <Tabs.Screen
         name="settings"
         options={{ title: 'Settings', tabBarIcon: ({ color }) => <SettingsIcon color={color} size={21} /> }}
       />
+      <Tabs.Screen name="logs" options={{ href: null }} />
     </Tabs>
   );
 }
