@@ -29,7 +29,6 @@ export async function transcribeAudio(uri: string): Promise<string> {
   const name = uri.split('/').pop() ?? 'audio.m4a';
 
   const form = new FormData();
-  // React Native FormData accepts a file descriptor object for uploads.
   form.append('file', { uri, name, type: 'audio/m4a' } as unknown as Blob);
 
   const response = await fetch(`${apiBase()}/api/ai/transcribe`, {

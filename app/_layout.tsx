@@ -48,7 +48,6 @@ function RootNavigator() {
         router.replace(homeRouteForPortal(userType));
         return;
       }
-      // auth-callback manages email confirm → login; reset-password manages recovery.
       if (inAuth && (authScreen === 'auth-callback' || authScreen === 'reset-password')) {
         return;
       }

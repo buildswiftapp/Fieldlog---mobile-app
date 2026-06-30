@@ -259,9 +259,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           trade,
         });
 
-        // Native Supabase Auth sends the confirmation email (configured in the
-        // Supabase dashboard). The link returns to fieldlog://auth-callback,
-        // where the pending org details below are used to bootstrap the org.
         const { data, error } = await supabase.auth.signUp({
           email: pendingPayload.email,
           password,
@@ -272,8 +269,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error) throw new Error(friendlyAuthError(error.message));
 
-        // Existing confirmed email: Supabase returns a user with no identities
-        // (and no error) instead of revealing the account exists.
         if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
           throw new Error('An account with this email already exists. Sign in instead.');
         }
@@ -281,10 +276,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await savePendingSignup(pendingPayload);
         await saveSignupPortal(pendingPayload.userType);
 
-        // With "Confirm email" enabled, no session is returned — the user must
-        // verify via the emailed link first. If a session IS returned, the
-        // project has confirmation disabled; sign out so we never enter the app
-        // without verification (enable Confirm email in Supabase to send links).
         if (data.session) {
           await supabase.auth.signOut();
         }

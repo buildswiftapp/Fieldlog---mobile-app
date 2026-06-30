@@ -43,7 +43,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       setItems(list);
       setUnread(count);
     } catch {
-      // Keep the last good state if a refresh fails.
     } finally {
       setLoading(false);
     }
@@ -76,7 +75,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     refresh();
   }, [refresh]);
 
-  // Live updates via Realtime.
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
@@ -92,7 +90,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     };
   }, [userId, refresh]);
 
-  // Fallback polling + refresh when the app returns to the foreground.
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (!userId) return;

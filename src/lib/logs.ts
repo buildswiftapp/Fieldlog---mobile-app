@@ -107,8 +107,6 @@ export async function getHomeStats(): Promise<HomeStats> {
   return data as HomeStats;
 }
 
-// After a sub submits a log, ask the web app to email the GC a review link.
-// Best-effort: if the web URL or Resend isn't configured, this silently no-ops.
 export async function requestLogReviewEmail(logId: string) {
   const base = process.env.EXPO_PUBLIC_AUTH_API_URL?.replace(/\/$/, '');
   if (!base) return;
@@ -122,11 +120,9 @@ export async function requestLogReviewEmail(logId: string) {
       body: JSON.stringify({ logId }),
     });
   } catch {
-    // Non-fatal — the GC can still review the log in-app.
   }
 }
 
-// `photos` is a private, org-folder-scoped bucket, so reads need a signed URL.
 export async function getLogPhotoUrl(storagePath: string, expiresInSeconds = 3600) {
   const { data, error } = await supabase.storage
     .from(PHOTO_BUCKET)
@@ -135,8 +131,6 @@ export async function getLogPhotoUrl(storagePath: string, expiresInSeconds = 360
   return data.signedUrl;
 }
 
-// Object paths must begin with the owning organization id to satisfy the
-// storage RLS policy (photos_member_rw): {org_id}/{log_id}/{file}.
 export async function uploadLogPhoto(orgId: string, logId: string, uri: string) {
   const ext = uri.match(/\.([a-zA-Z0-9]+)(?:\?|$)/)?.[1]?.toLowerCase() ?? 'jpg';
   const path = `${orgId}/${logId}/${Date.now()}.${ext}`;

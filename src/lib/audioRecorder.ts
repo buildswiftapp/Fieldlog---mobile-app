@@ -1,6 +1,3 @@
-// @ts-nocheck
-// Thin wrapper around expo-av audio recording. Kept untyped so the project
-// type-checks before `npx expo install expo-av` has been run.
 import { Audio } from 'expo-av';
 
 export async function ensureMicPermission(): Promise<boolean> {

@@ -157,11 +157,9 @@ export function RecordLogScreen({ role, projectId }: Props) {
         try {
           if (organization?.id) await uploadLogPhoto(organization.id, created.id, uri);
         } catch {
-          // A failed photo upload should not block the log submission.
         }
       }
 
-      // Sub submissions notify the GC by email with a tokenized review link.
       if (role === 'sub') {
         await requestLogReviewEmail(created.id);
       }

@@ -43,7 +43,6 @@ export function RoleHome({ role }: { role: 'gc' | 'sub' }) {
       setStats(st);
       setRecentLogs(logs);
     } catch {
-      // Home stays usable even if a data source fails to load.
     } finally {
       setLoading(false);
     }

@@ -113,7 +113,6 @@ export default function AuthCallback() {
         return;
       }
 
-      // Social sign-in (Google) — keep session and finish OAuth setup.
       if (oauthPortal) {
         const result = await finalizeOAuthSession(session);
         if (!result.ok) {
@@ -128,7 +127,6 @@ export default function AuthCallback() {
         return;
       }
 
-      // Email confirmation — verify succeeded; open the correct login screen.
       const loginPortal = await resolveSignupPortal(session);
       await supabase.auth.signOut();
       if (active) {
