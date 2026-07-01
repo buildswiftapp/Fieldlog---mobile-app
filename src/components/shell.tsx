@@ -7,7 +7,7 @@ import { ChevronRightIcon } from '@/components/icons';
 import { BottomNav, type NavKey } from '@/components/BottomNav';
 import type { MobilePortal } from '@/lib/roles';
 
-/* App bar (top header) */
+
 export function AppBar({
   title,
   right,
@@ -30,7 +30,7 @@ export function AppBar({
   );
 }
 
-/* Breadcrumb */
+
 export type Crumb = { label: string; onPress?: () => void };
 export function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
@@ -51,7 +51,6 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
   );
 }
 
-/* Screen wrapper: scrollable body + optional bottom nav */
 export function Screen({
   children,
   nav,
@@ -88,7 +87,6 @@ export function Screen({
   );
 }
 
-/* Back button row for detail screens that pairs with AppBar */
 export function BackBar({ title, right }: { title: string; right?: ReactNode }) {
   const router = useRouter();
   return (

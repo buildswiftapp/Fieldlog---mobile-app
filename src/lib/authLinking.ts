@@ -9,17 +9,6 @@ export type AuthRedirectPath = 'auth-callback' | 'reset-password';
 
 const APP_SCHEME = process.env.EXPO_PUBLIC_APP_SCHEME ?? 'fieldlog';
 
-/**
- * Redirect URL passed to Supabase for signup confirmation and password reset.
- *
- * Native (iOS/Android): always use the app deep link (fieldlog://auth-callback)
- * so the email link opens the mobile app — NOT localhost:3000 (web Site URL).
- *
- * Expo web: use the current browser origin (e.g. http://localhost:8081/auth-callback).
- *
- * Override entirely with EXPO_PUBLIC_AUTH_REDIRECT_URL for Expo Go dev builds
- * (e.g. exp://192.168.1.10:8081/--/auth-callback).
- */
 export function getAuthRedirectUrl(path: AuthRedirectPath | `/${AuthRedirectPath}`) {
   const normalized = path.replace(/^\//, '') as AuthRedirectPath;
   const override = process.env.EXPO_PUBLIC_AUTH_REDIRECT_URL?.trim();
@@ -35,11 +24,9 @@ export function getAuthRedirectUrl(path: AuthRedirectPath | `/${AuthRedirectPath
     return Linking.createURL(normalized);
   }
 
-  // Native app — fixed scheme so Supabase never falls back to Site URL (localhost:3000).
   return `${APP_SCHEME}://${normalized}`;
 }
 
-/** All redirect URLs to whitelist in Supabase → Authentication → URL Configuration. */
 export function listRequiredSupabaseRedirectUrls() {
   const urls = [
     `${APP_SCHEME}://auth-callback`,
@@ -99,7 +86,6 @@ export function resetPasswordHref(code: string): string {
   return `/(auth)/reset-password?code=${encodeURIComponent(code)}`;
 }
 
-/** True when running inside Expo Go (exp://) rather than a fieldlog:// dev build. */
 export function isExpoGo() {
   return Constants.appOwnership === 'expo';
 }

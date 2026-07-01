@@ -174,7 +174,7 @@ export function RecordLogScreen({ role, projectId }: Props) {
       <AppBar title={role === 'sub' ? '● New Sub Daily Log' : '● New GC Daily Log'} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          {/* Steps */}
+          
           <View style={styles.steps}>
             {steps.map((s, i) => {
               const state = step > s.n ? 'done' : step === s.n ? 'act' : 'todo';
@@ -199,7 +199,7 @@ export function RecordLogScreen({ role, projectId }: Props) {
             })}
           </View>
 
-          {/* Project picker */}
+          
           <SectionHeader title="Project" />
           {projects.length === 0 ? (
             <Text style={styles.muted}>{role === 'gc' ? 'Create a project first to log work.' : 'No projects assigned to you yet.'}</Text>
@@ -222,7 +222,7 @@ export function RecordLogScreen({ role, projectId }: Props) {
             </View>
           )}
 
-          {/* Recorder */}
+          
           <View style={styles.recordWrap}>
             <Pressable
               onPress={recording ? onStopRecording : onStartRecording}
@@ -242,7 +242,7 @@ export function RecordLogScreen({ role, projectId }: Props) {
             </Text>
           </View>
 
-          {/* Transcript */}
+          
           <View style={{ marginHorizontal: 14 }}>
             <Field
               label="Transcript"
@@ -263,7 +263,7 @@ export function RecordLogScreen({ role, projectId }: Props) {
             />
           </View>
 
-          {/* AI result */}
+          
           {result ? (
             <View style={{ marginTop: 14 }}>
               <SectionHeader title="AI Review" right={<Badge tone="green">Ready</Badge>} />
@@ -281,7 +281,7 @@ export function RecordLogScreen({ role, projectId }: Props) {
             </View>
           ) : null}
 
-          {/* Photos */}
+          
           <SectionHeader title="Photos" right={<Text style={styles.photoCount}>{photos.length} attached</Text>} />
           <View style={styles.photoGrid}>
             {photos.map((uri) => (

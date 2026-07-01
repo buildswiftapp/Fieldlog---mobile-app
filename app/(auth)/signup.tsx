@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Btn, Field } from '@/components/ui';
+import { WebAutofillTrap } from '@/components/WebAutofillTrap';
 import { MicIcon } from '@/components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { friendlyAuthError } from '@/lib/authErrors';
@@ -94,13 +95,14 @@ export default function Signup() {
             </View>
           ) : (
             <>
-              <Field label="Company Name" placeholder={portal === 'sub' ? 'Mesa Electric' : 'Dawson Construction'} value={company} onChangeText={setCompany} />
-              <Field label={portal === 'sub' ? 'Your Name' : 'Full Name'} placeholder={portal === 'sub' ? 'Carlos Mendez' : 'Jake Dawson'} value={name} onChangeText={setName} />
+              <WebAutofillTrap />
+              <Field label="Company Name" placeholder={portal === 'sub' ? 'Mesa Electric' : 'Dawson Construction'} value={company} onChangeText={setCompany} accent={theme.accent} />
+              <Field label={portal === 'sub' ? 'Your Name' : 'Full Name'} placeholder={portal === 'sub' ? 'Carlos Mendez' : 'Jake Dawson'} value={name} onChangeText={setName} accent={theme.accent} />
               {portal === 'sub' ? (
-                <Field label="Trade" placeholder="Electrical" value={trade} onChangeText={setTrade} />
+                <Field label="Trade" placeholder="Electrical" value={trade} onChangeText={setTrade} accent={theme.accent} />
               ) : null}
-              <Field label="Email" placeholder="you@company.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-              <Field label="Password" placeholder="Create a password" secureTextEntry value={password} onChangeText={setPassword} />
+              <Field label="Email" placeholder="you@company.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} accent={theme.accent} />
+              <Field label="Password" placeholder="Create a password" secureTextEntry value={password} onChangeText={setPassword} accent={theme.accent} />
 
               {error ? <Text style={styles.error}>{error}</Text> : null}
 

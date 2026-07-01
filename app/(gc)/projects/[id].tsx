@@ -91,7 +91,6 @@ export default function ProjectDetail() {
         <Text style={styles.metaText}>👷 {detail.subcontractors.length} subs</Text>
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabsWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
           {TABS.map((t) => (

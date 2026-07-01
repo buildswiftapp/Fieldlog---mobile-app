@@ -5,7 +5,7 @@ import { clearAuthUrlParams, mergeAuthParams, readAuthUrlParams } from '@/lib/au
 import { loadOAuthPortal } from '@/lib/oauthIntent';
 import { finalizeOAuthSession } from '@/lib/oauthSession';
 import { loadPendingSignup, loadSignupPortal, resolveSignupPortal } from '@/lib/pendingSignup';
-import { loginRouteForPortal, type MobilePortal } from '@/lib/roles';
+import { type MobilePortal } from '@/lib/roles';
 import {
   establishAuthSessionFromParams,
   hasAuthPayload,
@@ -33,9 +33,13 @@ export default function AuthCallback() {
     let redirectTimer: ReturnType<typeof setTimeout> | undefined;
 
     async function goToLogin(portal: MobilePortal, verified = false) {
-      const query = verified ? '?verified=1' : '';
       redirectTimer = setTimeout(
-        () => active && router.replace(`${loginRouteForPortal(portal)}${query}` as '/'),
+        () =>
+          active &&
+          router.replace({
+            pathname: '/(auth)/login',
+            params: verified ? { portal, verified: '1' } : { portal },
+          }),
         verified ? 0 : 2200,
       );
     }

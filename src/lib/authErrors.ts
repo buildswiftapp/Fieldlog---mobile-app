@@ -1,4 +1,3 @@
-/** Map Supabase auth errors to short, actionable messages for the user. */
 export function friendlyAuthError(message: string) {
   const lower = message.toLowerCase();
   if (lower.includes('redirect') && lower.includes('url')) {
