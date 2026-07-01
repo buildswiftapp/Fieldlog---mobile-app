@@ -29,7 +29,6 @@ function readParam(params: URLSearchParams, key: string) {
   return params.get(key) ?? params.get(key.replace(/_/g, ''));
 }
 
-/** Parse query + hash params from a Supabase auth redirect URL. */
 export function parseAuthUrl(rawUrl: string): ParsedAuthUrl {
   if (!rawUrl) return { ...EMPTY };
 
@@ -91,9 +90,6 @@ function otpTypeFromAuthType(type: string | null): 'recovery' | 'signup' | 'emai
   return null;
 }
 
-/**
- * Turn Supabase redirect params into a session (PKCE code, OTP token hash, or implicit tokens).
- */
 export async function establishAuthSessionFromParams(
   supabase: SupabaseClient,
   input: AuthUrlParams | ParsedAuthUrl,

@@ -48,7 +48,7 @@ export default function GcHome() {
 
   return (
     <Screen nav navActive="home" portal="gc">
-      {/* Header */}
+     
       <View style={styles.header}>
         <Pressable style={styles.mark} onPress={() => router.push('/(gc)/settings')}>
           <Text style={styles.markText}>{initials(orgName)}</Text>
@@ -91,7 +91,6 @@ export default function GcHome() {
         inside each project.
       </Hint>
 
-      {/* Stats */}
       <View style={styles.statRow}>
         <View style={styles.stat}>
           <Text style={styles.statLabel}>Logs Today</Text>
@@ -105,7 +104,6 @@ export default function GcHome() {
         </View>
       </View>
 
-      {/* Project health */}
       <SectionHeader title="Project Health" action="View all →" onAction={() => router.push('/(gc)/projects')} />
       {loading ? (
         <ActivityIndicator color={palette.orange} style={{ marginVertical: 20 }} />
@@ -138,7 +136,6 @@ export default function GcHome() {
         })
       )}
 
-      {/* New log mic */}
       <SectionHeader title="New Log" style={{ paddingTop: 4 }} />
       <View style={styles.micWrap}>
         <Pressable style={styles.mic} onPress={() => router.push('/(gc)/log/new')}>
@@ -146,7 +143,6 @@ export default function GcHome() {
         </Pressable>
       </View>
 
-      {/* Recent activity */}
       <SectionHeader title="Recent Activity" action="All →" onAction={() => router.push('/(gc)/activity')} style={{ paddingTop: 4 }} />
       <Card flush>
         {recent.length === 0 ? (

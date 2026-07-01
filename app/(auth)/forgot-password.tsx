@@ -6,6 +6,7 @@ import { Btn, Field } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { getAuthRedirectUrl } from '@/lib/authLinking';
 import { friendlyAuthError } from '@/lib/authErrors';
+import { saveSignupPortal } from '@/lib/pendingSignup';
 import { type MobilePortal } from '@/lib/roles';
 import { palette, roleThemes } from '@/theme';
 
@@ -24,9 +25,10 @@ export default function ForgotPassword() {
       setError('Enter your email address.');
       return;
     }
-    setError(null);
+    setError(null)
     setLoading(true);
     try {
+      await saveSignupPortal(portal);
       const { error: e } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: getAuthRedirectUrl('auth-callback'),
       });

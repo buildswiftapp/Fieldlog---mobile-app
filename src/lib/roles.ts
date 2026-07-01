@@ -36,15 +36,15 @@ export function homeRouteForPortal(portal: MobilePortal) {
 }
 
 export function loginRouteForPortal(portal: MobilePortal) {
-  return portal === 'sub' ? '/(auth)/login/sub' : '/(auth)/login/gc';
+  return { pathname: '/(auth)/login' as const, params: { portal } };
 }
 
 export function signupRouteForPortal(portal: MobilePortal) {
-  return portal === 'sub' ? '/(auth)/signup/sub' : '/(auth)/signup/gc';
+  return { pathname: '/(auth)/signup' as const, params: { portal } };
 }
 
 export function forgotPasswordRouteForPortal(portal: MobilePortal) {
-  return portal === 'sub' ? '/(auth)/forgot-password/sub' : '/(auth)/forgot-password/gc';
+  return { pathname: '/(auth)/forgot-password' as const, params: { portal } };
 }
 
 export function portalLabel(portal: MobilePortal) {

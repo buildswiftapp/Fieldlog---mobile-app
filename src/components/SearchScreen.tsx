@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Screen } from '@/components/shell';
-import { Card } from '@/components/ui';
+import { Card, useInputBorder } from '@/components/ui';
 import { SearchIcon } from '@/components/icons';
 import { listMyProjects, type ProjectListItem } from '@/lib/projects';
 import { listRecentLogs, type LogListItem } from '@/lib/logs';
@@ -16,6 +16,7 @@ export function SearchScreen({ portal }: { portal: MobilePortal }) {
   const [q, setQ] = useState('');
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [logs, setLogs] = useState<LogListItem[]>([]);
+  const searchBorder = useInputBorder(palette.blueLight);
 
   useFocusEffect(
     useCallback(() => {
@@ -39,7 +40,12 @@ export function SearchScreen({ portal }: { portal: MobilePortal }) {
       <View style={styles.ab}>
         <Text style={styles.abTitle}>Search</Text>
       </View>
-      <View style={styles.searchWrap}>
+      <View
+        style={[styles.searchWrap, { borderColor: searchBorder.borderColor }]}
+        
+        onMouseEnter={() => searchBorder.setHovered(true)}
+        onMouseLeave={() => searchBorder.setHovered(false)}
+      >
         <View style={styles.searchIcon}>
           <SearchIcon size={14} color={palette.tx3} />
         </View>
@@ -50,6 +56,9 @@ export function SearchScreen({ portal }: { portal: MobilePortal }) {
           value={q}
           onChangeText={setQ}
           autoCapitalize="none"
+          onFocus={() => searchBorder.setFocused(true)}
+          onBlur={() => searchBorder.setFocused(false)}
+          className="fl-input"
         />
       </View>
 
@@ -112,9 +121,26 @@ function Empty({ text }: { text: string }) {
 const styles = StyleSheet.create({
   ab: { paddingVertical: 13, paddingHorizontal: 16, backgroundColor: palette.bg2, borderBottomWidth: 1, borderBottomColor: palette.border },
   abTitle: { fontSize: 15, fontWeight: '600', color: palette.tx },
-  searchWrap: { marginHorizontal: 14, marginVertical: 10, position: 'relative' },
+  searchWrap: {
+    marginHorizontal: 14,
+    marginVertical: 10,
+    position: 'relative',
+    backgroundColor: palette.bg3,
+    borderWidth: 1,
+    borderColor: palette.border2,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
   searchIcon: { position: 'absolute', left: 10, top: 0, bottom: 0, justifyContent: 'center', zIndex: 1 },
-  search: { backgroundColor: palette.bg3, borderWidth: 1, borderColor: palette.border2, borderRadius: 10, paddingVertical: 9, paddingLeft: 32, paddingRight: 10, color: palette.tx, fontSize: 13 },
+  search: {
+    borderWidth: 0,
+    paddingVertical: 9,
+    paddingLeft: 32,
+    paddingRight: 10,
+    color: palette.tx,
+    fontSize: 13,
+    backgroundColor: 'transparent',
+  },
   sectionLabel: { fontSize: 10.5, fontWeight: '700', color: palette.tx3, letterSpacing: 0.7, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 7 },
   row: { padding: 11, paddingHorizontal: 14 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: palette.border },

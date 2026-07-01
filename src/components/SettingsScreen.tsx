@@ -33,7 +33,7 @@ export function SettingsScreen({ portal }: { portal: MobilePortal }) {
         <Text style={styles.abTitle}>Settings</Text>
       </View>
 
-      {/* Account header */}
+     
       <Card style={{ marginTop: 11, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={[styles.avatar, { backgroundColor: theme.accentDim, borderColor: theme.accent }]}>
           <Text style={[styles.avatarText, { color: theme.accent }]}>{initials(profile?.full_name || orgName)}</Text>

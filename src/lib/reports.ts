@@ -33,7 +33,6 @@ function fmt(d: Date) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/** Build an owner-ready report by aggregating a project's recent daily logs. */
 export async function buildPeriodReport(
   projectName: string,
   period: ReportPeriod,
@@ -47,7 +46,6 @@ export async function buildPeriodReport(
     return t >= start.getTime();
   });
 
-  // Pull structured details for up to the most recent logs in the window.
   const details = await Promise.all(
     inWindow.slice(0, 30).map((l) => getLogDetail(l.id).catch(() => null)),
   );
@@ -106,15 +104,10 @@ export async function buildPeriodReport(
   };
 }
 
-/** Build a friendly, owner-facing title like "Weekly Report — Jun 1–7". */
 export function reportShareTitle(report: PeriodReport): string {
   return `${report.period === 'weekly' ? 'Weekly' : 'Monthly'} Report — ${report.rangeLabel}`;
 }
 
-/**
- * Persist an aggregated report so it shows up in the owner portal
- * (project_reports). Calls the fl_create_project_report RPC.
- */
 export async function shareProjectReport(projectId: string, report: PeriodReport): Promise<void> {
   const { error } = await supabase.rpc('fl_create_project_report' as never, {
     p_project_id: projectId,

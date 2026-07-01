@@ -21,7 +21,8 @@ import {
   readNativeLinkingAuthUrl,
   type ParsedAuthUrl,
 } from '@/lib/authSession';
-import { forgotPasswordRouteForPortal, loginRouteForPortal } from '@/lib/roles';
+import { forgotPasswordRouteForPortal, loginRouteForPortal, type MobilePortal } from '@/lib/roles';
+import { loadSignupPortal } from '@/lib/pendingSignup';
 import { supabase } from '@/lib/supabase';
 import { palette, radius } from '@/theme';
 
@@ -57,8 +58,10 @@ export default function ResetPassword() {
     error?: string;
     error_description?: string;
     type?: string;
+    portal?: string;
   }>();
   const router = useRouter();
+  const [portal, setPortal] = useState<MobilePortal>(params.portal === 'sub' ? 'sub' : 'gc');
   const [stage, setStage] = useState<Stage>('verifying');
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
@@ -66,6 +69,17 @@ export default function ResetPassword() {
   const [saving, setSaving] = useState(false);
   const handled = useRef(false);
   const started = useRef(false);
+
+  useEffect(() => {
+    if (params.portal === 'gc' || params.portal === 'sub') return;
+    let active = true;
+    void loadSignupPortal().then((saved) => {
+      if (active && saved) setPortal(saved);
+    });
+    return () => {
+      active = false;
+    };
+  }, [params.portal]);
 
   useEffect(() => {
     let active = true;
@@ -219,7 +233,7 @@ export default function ResetPassword() {
               </View>
               <Button
                 label="Continue to sign in"
-                onPress={() => router.replace(loginRouteForPortal('gc'))}
+                onPress={() => router.replace(loginRouteForPortal(portal))}
                 accent={palette.blue}
                 onAccent="#FFFFFF"
               />
@@ -231,7 +245,7 @@ export default function ResetPassword() {
               {error ? <Text style={styles.error}>{error}</Text> : null}
               <Button
                 label="Request a new reset link"
-                onPress={() => router.replace(forgotPasswordRouteForPortal('gc'))}
+                onPress={() => router.replace(forgotPasswordRouteForPortal(portal))}
                 accent={palette.blue}
                 onAccent="#FFFFFF"
               />
@@ -240,7 +254,7 @@ export default function ResetPassword() {
 
           <Text style={styles.footer}>
             Remember your password?{' '}
-            <Link href={loginRouteForPortal('gc')} style={styles.link}>
+            <Link href={loginRouteForPortal(portal)} style={styles.link}>
               Back to sign in
             </Link>
           </Text>

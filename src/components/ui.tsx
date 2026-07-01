@@ -1,12 +1,15 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import {
   ActivityIndicator,
+  NativeSyntheticEvent,
+  Platform,
   Pressable,
   ScrollView,
   StyleProp,
   StyleSheet,
   Text,
   TextInput,
+  TextInputFocusEventData,
   TextInputProps,
   TextStyle,
   View,
@@ -14,7 +17,21 @@ import {
 } from 'react-native';
 import { palette, radius } from '@/theme';
 
-/* ── Typography helpers ───────────────────────────────────────── */
+function inputBorderColor(focused: boolean, hovered: boolean) {
+  if (focused || hovered) return palette.blue;
+  return palette.border2;
+}
+
+export function useInputBorder(_accent?: string) {
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  return {
+    borderColor: inputBorderColor(focused, hovered),
+    setFocused,
+    setHovered,
+  };
+}
+
 export function T(props: { children: ReactNode; style?: StyleProp<TextStyle>; numberOfLines?: number }) {
   return (
     <Text style={props.style} numberOfLines={props.numberOfLines}>
@@ -23,7 +40,6 @@ export function T(props: { children: ReactNode; style?: StyleProp<TextStyle>; nu
   );
 }
 
-/* ── Card ─────────────────────────────────────────────────────── */
 export function Card({
   children,
   style,
@@ -46,7 +62,6 @@ export function Card({
   return content;
 }
 
-/* ── Badge ────────────────────────────────────────────────────── */
 type BadgeTone = 'orange' | 'green' | 'blue' | 'red' | 'purple' | 'gray';
 const badgeTones: Record<BadgeTone, { bg: string; fg: string }> = {
   orange: { bg: palette.orangeDim, fg: palette.orange },
@@ -65,7 +80,6 @@ export function Badge({ tone = 'gray', children }: { tone?: BadgeTone; children:
   );
 }
 
-/* ── Button ───────────────────────────────────────────────────── */
 type BtnVariant = 'primary' | 'secondary' | 'purple' | 'blue' | 'danger';
 export function Btn({
   label,
@@ -133,29 +147,70 @@ export function Btn({
   );
 }
 
-/** Compatibility alias for screens that import `Button`. */
 export const Button = Btn;
 
-/* ── Field / Input ────────────────────────────────────────────── */
 export function Field({
   label,
   style,
   containerStyle,
+  accent: _accent,
+  onFocus,
+  onBlur,
+  autoComplete,
+  textContentType,
   ...props
-}: TextInputProps & { label?: string; containerStyle?: StyleProp<ViewStyle> }) {
+}: TextInputProps & { label?: string; containerStyle?: StyleProp<ViewStyle>; accent?: string }) {
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [editable, setEditable] = useState(Platform.OS !== 'web');
+  const borderColor = inputBorderColor(focused, hovered);
+
+  const autofillProps =
+    Platform.OS === 'web'
+      ? {
+          autoComplete: autoComplete ?? (props.secureTextEntry ? 'new-password' : 'off'),
+          readOnly: !editable,
+          'data-lpignore': 'true',
+          'data-1p-ignore': 'true',
+          'data-form-type': 'other',
+        }
+      : {
+          autoComplete: autoComplete ?? 'off',
+          textContentType: textContentType ?? 'none',
+          importantForAutofill: 'no' as const,
+        };
+
   return (
-    <View style={[styles.fieldRow, containerStyle]}>
+    <View
+      style={[styles.fieldRow, containerStyle]}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
-      <TextInput
-        placeholderTextColor={palette.tx3}
-        style={[styles.input, style]}
-        {...props}
-      />
+      <View style={[styles.inputShell, { borderColor }]}>
+        <TextInput
+          placeholderTextColor={palette.tx3}
+          autoCorrect={false}
+          style={[styles.inputInner, style]}
+          onFocus={(e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+            if (Platform.OS === 'web' && !editable) setEditable(true);
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
+          {...props}
+          {...autofillProps}
+          
+          className="fl-input"
+        />
+      </View>
     </View>
   );
 }
 
-/* ── Section header ───────────────────────────────────────────── */
 export function SectionHeader({
   title,
   action,
@@ -183,7 +238,6 @@ export function SectionHeader({
   );
 }
 
-/* ── Hint banner ──────────────────────────────────────────────── */
 export function Hint({ children }: { children: ReactNode }) {
   return (
     <View style={styles.hint}>
@@ -202,7 +256,6 @@ function InfoDot() {
   );
 }
 
-/* ── Health bar ───────────────────────────────────────────────── */
 export function HealthBar({ pct, color, style }: { pct: number; color: string; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[styles.hb, style]}>
@@ -211,7 +264,6 @@ export function HealthBar({ pct, color, style }: { pct: number; color: string; s
   );
 }
 
-/* ── Pills row ────────────────────────────────────────────────── */
 export function Pill({ label, on, onPress, accent }: { label: string; on?: boolean; onPress?: () => void; accent?: string }) {
   const a = accent ?? palette.blue;
   return (
@@ -229,12 +281,10 @@ export function Pill({ label, on, onPress, accent }: { label: string; on?: boole
   );
 }
 
-/* ── Strip / meta bar (e.g. project detail meta) ──────────────── */
 export function MetaBar({ children }: { children: ReactNode }) {
   return <View style={styles.metaBar}>{children}</View>;
 }
 
-/* ── Divider ──────────────────────────────────────────────────── */
 export function Divider() {
   return <View style={{ height: 1, backgroundColor: palette.border }} />;
 }
@@ -266,6 +316,24 @@ export const styles = StyleSheet.create({
   btnText: { fontSize: 13, fontWeight: '600' },
   fieldRow: { marginBottom: 11 },
   fieldLabel: { fontSize: 11, fontWeight: '500', color: palette.tx2, marginBottom: 4 },
+  inputShell: {
+    backgroundColor: palette.bg3,
+    borderWidth: 1,
+    borderColor: palette.border2,
+    borderRadius: 9,
+    overflow: 'hidden',
+  },
+  inputInner: {
+    borderWidth: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    color: palette.tx,
+    fontSize: 12.5,
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web'
+      ? ({ outlineStyle: 'none', outlineWidth: 0 } as object)
+      : null),
+  },
   input: {
     backgroundColor: palette.bg3,
     borderWidth: 1,

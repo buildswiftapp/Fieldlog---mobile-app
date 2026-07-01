@@ -31,7 +31,6 @@ export async function clearPendingSignup() {
   await AsyncStorage.removeItem(KEY);
 }
 
-/** Remember which portal (gc/sub) the user registered under — survives email confirm. */
 export async function saveSignupPortal(portal: MobilePortal) {
   await AsyncStorage.setItem(PORTAL_KEY, portal);
 }
@@ -60,7 +59,6 @@ function fromUserMetadata(user: User): PendingSignup | null {
   };
 }
 
-/** Local pending signup, or the same data restored from Supabase user metadata after email confirm. */
 export async function getSignupCompletionData(user: User | null | undefined): Promise<PendingSignup | null> {
   if (!user?.email) return null;
 
@@ -102,7 +100,6 @@ export function signupMetadataFromPayload(payload: PendingSignup) {
   };
 }
 
-/** Which portal login to open after email confirmation (sub vs gc). */
 export async function resolveSignupPortal(session: Session): Promise<MobilePortal> {
   const saved = await loadSignupPortal();
   if (saved) return saved;

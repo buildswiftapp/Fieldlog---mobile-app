@@ -9,8 +9,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Btn, Field } from '@/components/ui';
+import { WebAutofillTrap } from '@/components/WebAutofillTrap';
 import { GoogleIcon, MicrosoftIcon, MicIcon } from '@/components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { friendlyAuthError } from '@/lib/authErrors';
@@ -19,12 +20,14 @@ import { palette, roleThemes } from '@/theme';
 
 export default function Login() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ portal?: string; verified?: string }>();
   const { signIn } = useAuth();
-  const [portal, setPortal] = useState<MobilePortal>('gc');
+  const [portal, setPortal] = useState<MobilePortal>(params.portal === 'sub' ? 'sub' : 'gc');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const verified = params.verified === '1';
   const theme = roleThemes[portal];
 
   async function onSubmit() {
@@ -48,7 +51,7 @@ export default function Login() {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          {/* Portal toggle */}
+          
           <View style={styles.toggle}>
             <Pressable
               style={[styles.toggleItem, portal === 'gc' && { backgroundColor: palette.orangeDim }]}
@@ -113,8 +116,17 @@ export default function Login() {
             </>
           ) : null}
 
-          <Field label="Email" placeholder="you@company.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-          <Field label="Password" placeholder="••••••••" secureTextEntry value={password} onChangeText={setPassword} />
+          {verified ? (
+            <View style={styles.verified}>
+              <Text style={styles.verifiedText}>
+                Your email is confirmed. Sign in with the password you created.
+              </Text>
+            </View>
+          ) : null}
+
+          <WebAutofillTrap />
+          <Field label="Email" placeholder="you@company.com" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} accent={theme.accent} />
+          <Field label="Password" placeholder="••••••••" secureTextEntry value={password} onChangeText={setPassword} accent={theme.accent} />
 
           <Text
             style={styles.forgot}
@@ -191,6 +203,15 @@ const styles = StyleSheet.create({
   orLine: { flex: 1, height: 1, backgroundColor: palette.border2 },
   orText: { fontSize: 10.5, color: palette.tx3 },
   forgot: { textAlign: 'right', fontSize: 11.5, color: palette.blueLight, marginTop: -2, marginBottom: 16 },
+  verified: {
+    backgroundColor: palette.greenDim,
+    borderWidth: 1,
+    borderColor: palette.green,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+  },
+  verifiedText: { color: palette.tx2, fontSize: 12, lineHeight: 17, textAlign: 'center' },
   error: { color: palette.red, fontSize: 12, marginBottom: 12 },
   footer: { textAlign: 'center', marginTop: 18, fontSize: 12.5, color: palette.tx2 },
   subNote: {
