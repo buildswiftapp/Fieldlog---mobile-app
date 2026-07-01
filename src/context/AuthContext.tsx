@@ -2,6 +2,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Organization, Profile, UserType } from '@/lib/database.types';
 import { getAuthRedirectUrl } from '@/lib/authLinking';
+import { friendlyAuthError } from '@/lib/authErrors';
 import {
   clearPendingSignup,
   clearSignupPortal,
@@ -55,17 +56,6 @@ type AuthState = {
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
-
-function friendlyAuthError(message: string) {
-  const lower = message.toLowerCase();
-  if (lower.includes('invalid login credentials') || lower.includes('invalid email or password')) {
-    return 'Incorrect email or password.';
-  }
-  if (lower.includes('email not confirmed')) {
-    return 'Confirm your email from the verification link we sent, then sign in again.';
-  }
-  return message;
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [initializing, setInitializing] = useState(true);

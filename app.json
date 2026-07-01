@@ -1,10 +1,10 @@
 {
   "expo": {
     "name": "FieldLog",
-    "slug": "fieldlog",
+    "slug": "fieldlog-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "fieldlog",
+    "scheme": "fieldlogapp",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -16,10 +16,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.byldgo.fieldlog"
+      "bundleIdentifier": "com.byldgo.fieldlogapp"
     },
     "android": {
-      "package": "com.byldgo.fieldlog",
+      "package": "com.byldgo.fieldlogapp",
       "adaptiveIcon": {
         "backgroundColor": "#0D0F12"
       }

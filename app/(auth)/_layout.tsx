@@ -3,12 +3,6 @@ import { palette } from '@/theme';
 
 export default function AuthLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: palette.bg },
-        animation: 'fade',
-      }}
-    />
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }} />
   );
 }

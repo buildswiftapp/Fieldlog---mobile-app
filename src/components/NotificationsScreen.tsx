@@ -1,175 +1,135 @@
-import { useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Screen, AppBar, Breadcrumb } from '@/components/shell';
+import { Card } from '@/components/ui';
+import { AlertTriangleIcon, CheckCircleIcon, FileTextIcon, BellIcon, SparkleIcon } from '@/components/icons';
 import {
-  AlertTriangleIcon,
-  BellIcon,
-  CheckCircleIcon,
-  ClipboardIcon,
-  HardHatIcon,
-} from '@/components/icons';
-import { useAuth } from '@/context/AuthContext';
-import { useNotifications } from '@/context/NotificationsContext';
-import type { NotificationKind } from '@/lib/database.types';
-import type { NotificationItem } from '@/lib/notifications';
-import { palette, radius, roleThemes } from '@/theme';
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type NotificationItem,
+} from '@/lib/notifications';
+import { relativeTime } from '@/lib/format';
+import { palette, roleThemes } from '@/theme';
+import type { MobilePortal } from '@/lib/roles';
 
-function timeAgo(value: string) {
-  const then = new Date(value).getTime();
-  if (Number.isNaN(then)) return '';
-  const diff = Math.max(0, Date.now() - then);
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
-function iconFor(kind: NotificationKind, accent: string) {
+function iconFor(kind: NotificationItem['kind'], color: string) {
   switch (kind) {
     case 'log_alert':
-      return { Icon: AlertTriangleIcon, color: palette.orange };
+      return <AlertTriangleIcon size={14} color={palette.orange} />;
     case 'log_reviewed':
-      return { Icon: CheckCircleIcon, color: palette.green };
-    case 'sub_assigned':
-      return { Icon: HardHatIcon, color: accent };
+      return <CheckCircleIcon size={14} color={palette.green} />;
+    case 'log_submitted':
+      return <FileTextIcon size={14} color={color} />;
     default:
-      return { Icon: ClipboardIcon, color: accent };
+      return <SparkleIcon size={14} color={color} />;
   }
 }
 
-export function NotificationsScreen({ role }: { role: 'gc' | 'sub' }) {
-  const { organization } = useAuth();
+export function NotificationsScreen({ portal }: { portal: MobilePortal }) {
   const router = useRouter();
-  const theme = roleThemes[role];
-  const accent = organization?.brand_color ?? theme.accent;
-  const { items, unread, loading, refresh, markRead, markAllRead } = useNotifications();
-  const [refreshing, setRefreshing] = useState(false);
+  const accent = roleThemes[portal].accent;
+  const [items, setItems] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const logsBase = role === 'gc' ? '/(gc)/logs' : '/(sub)/logs';
-  const projectsBase = role === 'gc' ? '/(gc)/projects' : '/(sub)/projects';
+  const load = useCallback(async () => {
+    try {
+      const data = await listNotifications();
+      setItems(data);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  function onPressItem(n: NotificationItem) {
-    if (!n.read_at) markRead(n.id);
-    if (n.log_id) router.push(`${logsBase}/${n.log_id}` as '/');
-    else if (n.project_id) router.push(`${projectsBase}/${n.project_id}` as '/');
-  }
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  const open = async (n: NotificationItem) => {
+    if (!n.read_at) {
+      markNotificationRead(n.id).catch(() => {});
+      setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x)));
+    }
+    const base = portal === 'sub' ? '/(sub)' : '/(gc)';
+    if (n.log_id) router.push(`${base}/logs/${n.log_id}` as never);
+    else if (n.project_id) router.push(`${base}/projects/${n.project_id}` as never);
+  };
+
+  const markAll = async () => {
+    await markAllNotificationsRead().catch(() => {});
+    setItems((prev) => prev.map((x) => ({ ...x, read_at: x.read_at ?? new Date().toISOString() })));
+  };
+
+  const hasUnread = items.some((x) => !x.read_at);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Alerts</Text>
-        {unread > 0 ? (
-          <Pressable hitSlop={8} onPress={markAllRead}>
-            <Text style={[styles.markAll, { color: accent }]}>Mark all read</Text>
-          </Pressable>
-        ) : null}
-      </View>
-
+    <Screen portal={portal}>
+      <Breadcrumb items={[{ label: 'Home', onPress: () => router.back() }, { label: 'Notifications' }]} />
+      <AppBar
+        title="Notifications"
+        right={
+          hasUnread ? (
+            <Pressable onPress={markAll} hitSlop={8}>
+              <Text style={[styles.markAll, { color: accent }]}>Mark all read</Text>
+            </Pressable>
+          ) : undefined
+        }
+      />
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={accent} />
-        </View>
+        <ActivityIndicator color={accent} style={{ marginVertical: 24 }} />
       ) : items.length === 0 ? (
-        <View style={styles.center}>
-          <View style={[styles.emptyIcon, { backgroundColor: `${accent}1a` }]}>
-            <BellIcon color={accent} size={26} />
-          </View>
-          <Text style={styles.emptyTitle}>You’re all caught up</Text>
-          <Text style={styles.emptyBody}>
-            {role === 'gc'
-              ? 'Sub submissions, AI flags, and reviews will show up here.'
-              : 'Assignments and log reviews from your GC will show up here.'}
-          </Text>
+        <View style={styles.emptyWrap}>
+          <BellIcon size={28} color={palette.tx3} />
+          <Text style={styles.emptyText}>You're all caught up</Text>
+          <Text style={styles.emptySub}>New logs, approvals, and AI alerts will appear here.</Text>
         </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              tintColor={palette.tx2}
-              onRefresh={async () => {
-                setRefreshing(true);
-                await refresh();
-                setRefreshing(false);
-              }}
-            />
-          }
-        >
-          {items.map((n) => {
-            const { Icon, color } = iconFor(n.kind, accent);
-            const unreadItem = !n.read_at;
-            return (
-              <Pressable
-                key={n.id}
-                onPress={() => onPressItem(n)}
-                style={({ pressed }) => [
-                  styles.row,
-                  unreadItem && styles.rowUnread,
-                  pressed && { opacity: 0.85 },
-                ]}
-              >
-                <View style={[styles.rowIcon, { backgroundColor: `${color}1a` }]}>
-                  <Icon color={color} size={17} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle} numberOfLines={1}>
-                    {n.title}
-                  </Text>
-                  <Text style={styles.rowBody} numberOfLines={2}>
+        <Card flush style={{ marginTop: 10 }}>
+          {items.map((n, i) => (
+            <Pressable
+              key={n.id}
+              style={[styles.row, i < items.length - 1 && styles.rowBorder, !n.read_at && { backgroundColor: 'rgba(255,255,255,0.02)' }]}
+              onPress={() => open(n)}
+            >
+              <View style={[styles.dot, { backgroundColor: palette.bg4 }]}>{iconFor(n.kind, accent)}</View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.title} numberOfLines={1}>
+                  {n.title}
+                </Text>
+                {n.body ? (
+                  <Text style={styles.body} numberOfLines={2}>
                     {n.body}
                   </Text>
-                  <Text style={styles.rowTime}>{timeAgo(n.created_at)}</Text>
-                </View>
-                {unreadItem ? <View style={[styles.dot, { backgroundColor: accent }]} /> : null}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+                ) : null}
+                <Text style={styles.meta}>
+                  {n.project_name ? `${n.project_name} · ` : ''}
+                  {relativeTime(n.created_at)}
+                </Text>
+              </View>
+              {!n.read_at ? <View style={[styles.unread, { backgroundColor: accent }]} /> : null}
+            </Pressable>
+          ))}
+        </Card>
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: palette.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: palette.bg2,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
-  },
-  title: { fontSize: 15, fontWeight: '600', color: palette.tx },
-  markAll: { fontSize: 12.5, fontWeight: '600' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36, gap: 10 },
-  emptyIcon: { width: 56, height: 56, borderRadius: radius.round, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontSize: 15, fontWeight: '600', color: palette.tx, marginTop: 4 },
-  emptyBody: { fontSize: 12.5, color: palette.tx2, textAlign: 'center', lineHeight: 18 },
-  scroll: { padding: 12 },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 13,
-    borderRadius: radius.lg,
-    backgroundColor: palette.bg2,
-    borderWidth: 1,
-    borderColor: palette.border,
-    marginBottom: 8,
-    alignItems: 'flex-start',
-  },
-  rowUnread: { backgroundColor: palette.bg3, borderColor: palette.border2 },
-  rowIcon: { width: 36, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { fontSize: 13.5, fontWeight: '600', color: palette.tx },
-  rowBody: { fontSize: 12.5, color: palette.tx2, marginTop: 2, lineHeight: 17 },
-  rowTime: { fontSize: 11, color: palette.tx3, marginTop: 5 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 4 },
+  markAll: { fontSize: 12, fontWeight: '600' },
+  emptyWrap: { alignItems: 'center', paddingVertical: 50, gap: 8 },
+  emptyText: { fontSize: 14, fontWeight: '600', color: palette.tx },
+  emptySub: { fontSize: 12, color: palette.tx2, textAlign: 'center', paddingHorizontal: 40, lineHeight: 17 },
+  row: { flexDirection: 'row', gap: 11, padding: 12, paddingHorizontal: 14, alignItems: 'center' },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: palette.border },
+  dot: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 13, fontWeight: '500', color: palette.tx },
+  body: { fontSize: 11.5, color: palette.tx2, marginTop: 2, lineHeight: 16 },
+  meta: { fontSize: 10.5, color: palette.tx3, marginTop: 3 },
+  unread: { width: 8, height: 8, borderRadius: 4 },
 });

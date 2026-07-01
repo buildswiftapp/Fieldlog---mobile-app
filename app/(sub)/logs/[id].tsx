@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
-import { LogDetailScreen } from '@/components/logs/LogDetailScreen';
+import { LogDetailScreen } from '@/components/LogDetailScreen';
 
 export default function SubLogDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <LogDetailScreen role="sub" logId={String(id)} />;
+  return <LogDetailScreen id={id} role="sub" />;
 }
