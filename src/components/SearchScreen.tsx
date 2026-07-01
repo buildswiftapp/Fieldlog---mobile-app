@@ -42,9 +42,10 @@ export function SearchScreen({ portal }: { portal: MobilePortal }) {
       </View>
       <View
         style={[styles.searchWrap, { borderColor: searchBorder.borderColor }]}
-        
-        onMouseEnter={() => searchBorder.setHovered(true)}
-        onMouseLeave={() => searchBorder.setHovered(false)}
+        {...({
+          onMouseEnter: () => searchBorder.setHovered(true),
+          onMouseLeave: () => searchBorder.setHovered(false),
+        } as object)}
       >
         <View style={styles.searchIcon}>
           <SearchIcon size={14} color={palette.tx3} />

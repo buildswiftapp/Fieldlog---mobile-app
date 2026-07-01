@@ -15,6 +15,7 @@ import { WebAutofillTrap } from '@/components/WebAutofillTrap';
 import { GoogleIcon, MicrosoftIcon, MicIcon } from '@/components/icons';
 import { useAuth } from '@/context/AuthContext';
 import { friendlyAuthError } from '@/lib/authErrors';
+import { startOAuth, type OAuthProvider } from '@/lib/oauth';
 import { homeRouteForPortal, type MobilePortal } from '@/lib/roles';
 import { palette, roleThemes } from '@/theme';
 
@@ -26,6 +27,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const verified = params.verified === '1';
   const theme = roleThemes[portal];
@@ -44,6 +46,27 @@ export default function Login() {
       setError(friendlyAuthError(e instanceof Error ? e.message : 'Could not sign in.'));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onOAuth(provider: OAuthProvider) {
+    setError(null);
+    setSsoLoading(provider);
+    try {
+      const res = await startOAuth(provider, portal);
+      if (res.status === 'error') {
+        setError(friendlyAuthError(res.message));
+      } else if (res.status === 'callback') {
+        router.replace({
+          pathname: '/(auth)/auth-callback',
+          params: res.type ? { code: res.code, type: res.type } : { code: res.code },
+        });
+      }
+      // 'redirecting' (web): the browser navigates away. 'cancelled': no-op.
+    } catch (e) {
+      setError(friendlyAuthError(e instanceof Error ? e.message : 'Could not sign in.'));
+    } finally {
+      setSsoLoading(null);
     }
   }
 
@@ -98,7 +121,9 @@ export default function Login() {
                 icon={<GoogleIcon size={16} />}
                 style={{ marginBottom: 9 }}
                 textStyle={{ fontWeight: '500' }}
-                onPress={() => setError('Enable Google in Supabase Auth to use SSO.')}
+                loading={ssoLoading === 'google'}
+                disabled={ssoLoading !== null}
+                onPress={() => onOAuth('google')}
               />
               <Btn
                 label="Continue with Microsoft"
@@ -106,7 +131,9 @@ export default function Login() {
                 icon={<MicrosoftIcon size={15} />}
                 style={{ marginBottom: 18 }}
                 textStyle={{ fontWeight: '500' }}
-                onPress={() => setError('Enable Microsoft in Supabase Auth to use SSO.')}
+                loading={ssoLoading === 'azure'}
+                disabled={ssoLoading !== null}
+                onPress={() => onOAuth('azure')}
               />
               <View style={styles.orRow}>
                 <View style={styles.orLine} />

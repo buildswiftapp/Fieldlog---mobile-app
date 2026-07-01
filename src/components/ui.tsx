@@ -183,8 +183,10 @@ export function Field({
   return (
     <View
       style={[styles.fieldRow, containerStyle]}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      {...({
+        onMouseEnter: () => setHovered(true),
+        onMouseLeave: () => setHovered(false),
+      } as object)}
     >
       {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
       <View style={[styles.inputShell, { borderColor }]}>

@@ -161,6 +161,7 @@ export default function AuthCallback() {
           return;
         }
         if (active) setMessage('Signed in. Finishing setup…');
+        redirectTimer = setTimeout(() => active && router.replace('/'), 0);
         return;
       }
 
