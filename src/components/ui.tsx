@@ -1,62 +1,41 @@
-import { type ReactNode } from 'react';
+import { ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
+  StyleProp,
   StyleSheet,
   Text,
+  TextInput,
+  TextInputProps,
+  TextStyle,
   View,
-  type ViewStyle,
+  ViewStyle,
 } from 'react-native';
-import { Field } from '@/components/Field';
 import { palette, radius } from '@/theme';
 
-export { Field };
-
-export function Button({
-  label,
-  onPress,
-  variant = 'primary',
-  accent = palette.orange,
-  onAccent = '#000',
-  loading,
-  disabled,
-  icon,
-}: {
-  label: string;
-  onPress?: () => void;
-  variant?: 'primary' | 'secondary';
-  accent?: string;
-  onAccent?: string;
-  loading?: boolean;
-  disabled?: boolean;
-  icon?: ReactNode;
-}) {
-  const isPrimary = variant === 'primary';
-  const isDisabled = disabled || loading;
+/* ── Typography helpers ───────────────────────────────────────── */
+export function T(props: { children: ReactNode; style?: StyleProp<TextStyle>; numberOfLines?: number }) {
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={isDisabled}
-      style={({ pressed }) => [
-        styles.btn,
-        isPrimary ? { backgroundColor: accent } : styles.btnSecondary,
-        (pressed || isDisabled) && { opacity: 0.7 },
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={isPrimary ? onAccent : palette.tx} />
-      ) : (
-        <>
-          {icon}
-          <Text style={[styles.btnText, { color: isPrimary ? onAccent : palette.tx }]}>{label}</Text>
-        </>
-      )}
-    </Pressable>
+    <Text style={props.style} numberOfLines={props.numberOfLines}>
+      {props.children}
+    </Text>
   );
 }
 
-export function Card({ children, style, onPress }: { children: ReactNode; style?: ViewStyle; onPress?: () => void }) {
-  const content = <View style={[styles.card, style]}>{children}</View>;
+/* ── Card ─────────────────────────────────────────────────────── */
+export function Card({
+  children,
+  style,
+  onPress,
+  flush,
+}: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  onPress?: () => void;
+  flush?: boolean;
+}) {
+  const content = <View style={[styles.card, flush && styles.cardFlush, style]}>{children}</View>;
   if (onPress) {
     return (
       <Pressable onPress={onPress} style={({ pressed }) => pressed && { opacity: 0.85 }}>
@@ -67,74 +46,271 @@ export function Card({ children, style, onPress }: { children: ReactNode; style?
   return content;
 }
 
-export function Badge({ text, color, bg }: { text: string; color: string; bg: string }) {
+/* ── Badge ────────────────────────────────────────────────────── */
+type BadgeTone = 'orange' | 'green' | 'blue' | 'red' | 'purple' | 'gray';
+const badgeTones: Record<BadgeTone, { bg: string; fg: string }> = {
+  orange: { bg: palette.orangeDim, fg: palette.orange },
+  green: { bg: palette.greenDim, fg: palette.green },
+  blue: { bg: palette.blueDim, fg: palette.blueLight },
+  red: { bg: palette.redDim, fg: palette.red },
+  purple: { bg: palette.purpleDim, fg: palette.purple },
+  gray: { bg: 'rgba(255,255,255,0.06)', fg: palette.tx2 },
+};
+export function Badge({ tone = 'gray', children }: { tone?: BadgeTone; children: ReactNode }) {
+  const t = badgeTones[tone];
   return (
-    <View style={[styles.badge, { backgroundColor: bg }]}>
-      <Text style={[styles.badgeText, { color }]}>{text}</Text>
+    <View style={[styles.badge, { backgroundColor: t.bg }]}>
+      <Text style={[styles.badgeText, { color: t.fg }]}>{children}</Text>
     </View>
   );
 }
 
-export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+/* ── Button ───────────────────────────────────────────────────── */
+type BtnVariant = 'primary' | 'secondary' | 'purple' | 'blue' | 'danger';
+export function Btn({
+  label,
+  onPress,
+  variant = 'primary',
+  style,
+  textStyle,
+  icon,
+  loading,
+  disabled,
+  accent,
+  onAccent,
+}: {
+  label: string;
+  onPress?: () => void;
+  variant?: BtnVariant;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  icon?: ReactNode;
+  loading?: boolean;
+  disabled?: boolean;
+  accent?: string;
+  onAccent?: string;
+}) {
+  let bg: string = 'transparent';
+  let fg: string = palette.tx;
+  let borderColor: string = 'transparent';
+  if (variant === 'primary') {
+    bg = accent ?? palette.orange;
+    fg = onAccent ?? '#000';
+  } else if (variant === 'purple') {
+    bg = palette.purple;
+    fg = '#fff';
+  } else if (variant === 'blue') {
+    bg = palette.blue;
+    fg = '#fff';
+  } else if (variant === 'danger') {
+    bg = 'transparent';
+    fg = palette.red;
+    borderColor = palette.redDim;
+  } else {
+    bg = 'transparent';
+    fg = palette.tx;
+    borderColor = palette.border2;
+  }
   return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <Pressable
+      onPress={disabled || loading ? undefined : onPress}
+      style={({ pressed }) => [
+        styles.btn,
+        { backgroundColor: bg, borderColor },
+        (pressed || disabled) && { opacity: 0.7 },
+        style,
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color={fg} />
+      ) : (
+        <>
+          {icon}
+          <Text style={[styles.btnText, { color: fg }, textStyle]}>{label}</Text>
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+/** Compatibility alias for screens that import `Button`. */
+export const Button = Btn;
+
+/* ── Field / Input ────────────────────────────────────────────── */
+export function Field({
+  label,
+  style,
+  containerStyle,
+  ...props
+}: TextInputProps & { label?: string; containerStyle?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[styles.fieldRow, containerStyle]}>
+      {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
+      <TextInput
+        placeholderTextColor={palette.tx3}
+        style={[styles.input, style]}
+        {...props}
+      />
+    </View>
+  );
+}
+
+/* ── Section header ───────────────────────────────────────────── */
+export function SectionHeader({
+  title,
+  action,
+  onAction,
+  right,
+  style,
+}: {
+  title: string;
+  action?: string;
+  onAction?: () => void;
+  right?: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View style={[styles.sh, style]}>
+      <Text style={styles.st}>{title}</Text>
       {action ? (
-        <Text style={styles.sectionAction} onPress={onAction}>
+        <Text style={styles.sl} onPress={onAction}>
           {action}
         </Text>
-      ) : null}
+      ) : (
+        right
+      )}
     </View>
   );
 }
 
+/* ── Hint banner ──────────────────────────────────────────────── */
 export function Hint({ children }: { children: ReactNode }) {
   return (
     <View style={styles.hint}>
+      <View style={{ marginTop: 1 }}>
+        <InfoDot />
+      </View>
       <Text style={styles.hintText}>{children}</Text>
     </View>
   );
 }
+function InfoDot() {
+  return (
+    <View style={{ width: 13, height: 13, borderRadius: 7, borderWidth: 1.4, borderColor: palette.tx3, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 1.4, height: 4, backgroundColor: palette.tx3, marginTop: 1 }} />
+    </View>
+  );
+}
 
-const styles = StyleSheet.create({
-  btn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-    borderRadius: radius.md,
-  },
-  btnSecondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: palette.border2 },
-  btnText: { fontSize: 14, fontWeight: '600' },
+/* ── Health bar ───────────────────────────────────────────────── */
+export function HealthBar({ pct, color, style }: { pct: number; color: string; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[styles.hb, style]}>
+      <View style={[styles.hf, { width: `${Math.max(0, Math.min(100, pct))}%`, backgroundColor: color }]} />
+    </View>
+  );
+}
+
+/* ── Pills row ────────────────────────────────────────────────── */
+export function Pill({ label, on, onPress, accent }: { label: string; on?: boolean; onPress?: () => void; accent?: string }) {
+  const a = accent ?? palette.blue;
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.pill,
+        on
+          ? { backgroundColor: palette.blueDim, borderColor: a }
+          : { backgroundColor: 'transparent', borderColor: palette.border2 },
+      ]}
+    >
+      <Text style={[styles.pillText, { color: on ? palette.blueLight : palette.tx2 }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/* ── Strip / meta bar (e.g. project detail meta) ──────────────── */
+export function MetaBar({ children }: { children: ReactNode }) {
+  return <View style={styles.metaBar}>{children}</View>;
+}
+
+/* ── Divider ──────────────────────────────────────────────────── */
+export function Divider() {
+  return <View style={{ height: 1, backgroundColor: palette.border }} />;
+}
+
+export const styles = StyleSheet.create({
   card: {
     backgroundColor: palette.bg2,
     borderWidth: 1,
     borderColor: palette.border,
-    borderRadius: radius.lg,
-    padding: 14,
+    borderRadius: 14,
+    padding: 13,
+    paddingHorizontal: 14,
+    marginHorizontal: 14,
+    marginBottom: 10,
   },
-  badge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
-  badgeText: { fontSize: 11, fontWeight: '500' },
-  sectionHeader: {
+  cardFlush: { padding: 0, overflow: 'hidden' },
+  badge: { alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20 },
+  badgeText: { fontSize: 10.5, fontWeight: '500' },
+  btn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  btnText: { fontSize: 13, fontWeight: '600' },
+  fieldRow: { marginBottom: 11 },
+  fieldLabel: { fontSize: 11, fontWeight: '500', color: palette.tx2, marginBottom: 4 },
+  input: {
+    backgroundColor: palette.bg3,
+    borderWidth: 1,
+    borderColor: palette.border2,
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    color: palette.tx,
+    fontSize: 12.5,
+  },
+  sh: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 8,
+    paddingTop: 12,
+    paddingBottom: 7,
   },
-  sectionTitle: { fontSize: 11, fontWeight: '700', color: palette.tx3, letterSpacing: 0.7, textTransform: 'uppercase' },
-  sectionAction: { fontSize: 12, color: palette.blueLight },
+  st: { fontSize: 10.5, fontWeight: '700', color: palette.tx3, letterSpacing: 0.7, textTransform: 'uppercase' },
+  sl: { fontSize: 12, color: palette.blueLight },
   hint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
     marginHorizontal: 14,
     marginTop: 9,
-    padding: 11,
+    paddingVertical: 8,
+    paddingHorizontal: 11,
     backgroundColor: 'rgba(37,99,235,0.05)',
     borderWidth: 1,
     borderColor: 'rgba(37,99,235,0.11)',
     borderRadius: 9,
   },
-  hintText: { fontSize: 11.5, color: palette.tx3, lineHeight: 18 },
+  hintText: { flex: 1, fontSize: 11.5, color: palette.tx3, lineHeight: 18 },
+  hb: { height: 4, backgroundColor: palette.bg4, borderRadius: 2, overflow: 'hidden', marginVertical: 7 },
+  hf: { height: '100%', borderRadius: 2 },
+  pill: { paddingHorizontal: 11, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  pillText: { fontSize: 11.5, fontWeight: '500' },
+  metaBar: {
+    backgroundColor: palette.bg2,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    gap: 14,
+  },
 });

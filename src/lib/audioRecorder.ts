@@ -13,7 +13,7 @@ export async function startRecording() {
   return recording;
 }
 
-export async function stopRecording(recording): Promise<string | null> {
+export async function stopRecording(recording: Audio.Recording | null): Promise<string | null> {
   if (!recording) return null;
   try {
     await recording.stopAndUnloadAsync();

@@ -1,11 +1,17 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { BrandLoader } from '@/components/BrandLoader';
-import { clearAuthUrlParams, readAuthUrlParams } from '@/lib/authLinking';
+import { clearAuthUrlParams, mergeAuthParams, readAuthUrlParams } from '@/lib/authLinking';
 import { loadOAuthPortal } from '@/lib/oauthIntent';
 import { finalizeOAuthSession } from '@/lib/oauthSession';
 import { loadPendingSignup, loadSignupPortal, resolveSignupPortal } from '@/lib/pendingSignup';
 import { loginRouteForPortal, type MobilePortal } from '@/lib/roles';
+import {
+  establishAuthSessionFromParams,
+  hasAuthPayload,
+  parseAuthUrl,
+  readNativeLinkingAuthUrl,
+} from '@/lib/authSession';
 import { supabase } from '@/lib/supabase';
 
 async function defaultPortal(): Promise<MobilePortal> {
@@ -39,12 +45,39 @@ export default function AuthCallback() {
       started.current = true;
 
       const urlParams = readAuthUrlParams();
-      const code = typeof params.code === 'string' ? params.code : urlParams.code;
-      const oauthError = typeof params.error === 'string' ? params.error : urlParams.error;
-      const errorDescription =
-        typeof params.error_description === 'string' ? params.error_description : urlParams.errorDescription;
-      const type = typeof params.type === 'string' ? params.type : urlParams.type;
+      const linkingUrl = await readNativeLinkingAuthUrl();
+      const fromLink = linkingUrl ? parseAuthUrl(linkingUrl) : null;
+      const merged = mergeAuthParams(
+        {
+          code: typeof params.code === 'string' ? params.code : null,
+          error: typeof params.error === 'string' ? params.error : null,
+          errorDescription:
+            typeof params.error_description === 'string' ? params.error_description : null,
+          type: typeof params.type === 'string' ? params.type : null,
+        },
+        urlParams,
+        fromLink ?? undefined,
+      );
+      const code = merged.code;
+      const oauthError = merged.error;
+      const errorDescription = merged.errorDescription;
+      const type = merged.type ?? fromLink?.type;
       const portal = await defaultPortal();
+
+      if (type === 'recovery' && fromLink && hasAuthPayload(fromLink)) {
+        clearAuthUrlParams();
+        const result = await establishAuthSessionFromParams(supabase, fromLink);
+        if (!result.ok) {
+          if (active) {
+            setIsError(true);
+            setMessage(result.message);
+          }
+          redirectTimer = setTimeout(() => active && router.replace('/(auth)/reset-password' as '/'), 0);
+          return;
+        }
+        redirectTimer = setTimeout(() => active && router.replace('/(auth)/reset-password' as '/'), 0);
+        return;
+      }
 
       if (oauthError || errorDescription) {
         clearAuthUrlParams();
@@ -56,12 +89,12 @@ export default function AuthCallback() {
         return;
       }
 
-      if (type === 'recovery' && code) {
+      if (type === 'recovery') {
         clearAuthUrlParams();
-        redirectTimer = setTimeout(
-          () => active && router.replace(`/(auth)/reset-password?code=${encodeURIComponent(code)}`),
-          0,
-        );
+        const href = code
+          ? `/(auth)/reset-password?code=${encodeURIComponent(code)}`
+          : '/(auth)/reset-password';
+        redirectTimer = setTimeout(() => active && router.replace(href as '/'), 0);
         return;
       }
 

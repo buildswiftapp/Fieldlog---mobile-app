@@ -1,5 +1,5 @@
 import { NotificationsScreen } from '@/components/NotificationsScreen';
 
 export default function GcNotifications() {
-  return <NotificationsScreen role="gc" />;
+  return <NotificationsScreen portal="gc" />;
 }
